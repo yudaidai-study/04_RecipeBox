@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="レシピ箱">
+  <meta name="theme-color" content="#d9642c">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.json">
+  <title>レシピを保存 - レシピ箱</title>
+  <link rel="stylesheet" href="./css/app.css">
+</head>
+<body class="add-page">
+  <div id="app">
+    <header class="app-header" style="padding-bottom:20px;">
+      <div class="app-brand">
+        <a href="./index.html" class="icon-btn" aria-label="一覧へ戻る">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        <div class="brand-text">
+          <h1 style="font-size:18px;">レシピを保存</h1>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div id="prefill-note" class="prefill-note hidden">共有メニューからURLを受け取りました。カテゴリを選んで保存してください。</div>
+
+      <form id="add-form">
+        <div id="add-error" class="form-error"></div>
+
+        <div class="field">
+          <label for="url-input">レシピのURL</label>
+          <input id="url-input" type="url" inputmode="url" placeholder="https://..." autocomplete="off" required>
+        </div>
+
+        <div class="field">
+          <label for="category-select">カテゴリ</label>
+          <select id="category-select">
+            <option value="">未分類</option>
+          </select>
+          <div id="new-cat-toggle-wrap">
+            <button id="new-cat-toggle" class="btn-text" type="button" style="padding:8px 0;">＋ 新しいカテゴリを追加</button>
+          </div>
+          <div id="new-cat-row" class="new-cat-row hidden">
+            <input id="new-cat-input" type="text" placeholder="新しいカテゴリ名" maxlength="30">
+            <button id="new-cat-add" type="button">追加</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="memo-input">メモ(任意)</label>
+          <textarea id="memo-input" placeholder="次回作るときのメモなど"></textarea>
+        </div>
+
+        <button id="save-btn" class="btn btn-primary" type="submit">保存する</button>
+      </form>
+
+      <div id="save-done" class="save-done hidden">
+        <div class="emoji">✅</div>
+        <h2>保存しました</h2>
+        <p id="save-done-note">このタブは閉じて大丈夫です。</p>
+        <div class="btn-row">
+          <button id="save-again-btn" class="btn btn-secondary" type="button">続けてもう1件保存</button>
+          <a href="./index.html" class="btn btn-primary" style="text-decoration:none; display:flex; align-items:center; justify-content:center;">一覧を見る</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ログイン(Shortcuts経由でSafariから直接開いた場合、standaloneアプリとはセッションが別のため必要) -->
+  <div id="login-overlay" class="overlay center">
+    <div class="sheet login-panel">
+      <svg class="brand-mark" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="background:linear-gradient(135deg,#d9642c,#f2994a); border-radius:14px;">
+        <path d="M9 17h18a1 1 0 0 1 1 1 9 9 0 0 1-9 9h0a9 9 0 0 1-9-9 1 1 0 0 1 1-1Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M11 17c0-3 1.5-4.5 1.5-6M18 17c0-3.5 2-5 2-7.5M25 17c0-3 1.5-4.5 1.5-6" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <h2>レシピ箱</h2>
+      <p>共有パスワードを入力してください</p>
+
+      <div id="login-not-configured" class="form-error">
+        Supabaseがまだ設定されていません。<code>js/config.js</code> にProject URLとanon keyを設定してください。
+      </div>
+
+      <form id="login-form">
+        <div id="login-error" class="form-error"></div>
+        <div class="field">
+          <label for="login-password">パスワード</label>
+          <input id="login-password" type="password" autocomplete="current-password" required>
+        </div>
+        <button id="login-submit" class="btn btn-primary" type="submit">ログイン</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module" src="./js/add.js"></script>
+  <script src="./js/sw-register.js"></script>
+</body>
+</html>

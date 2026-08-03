@@ -1,0 +1,22 @@
+{
+  "name": "レシピ箱",
+  "short_name": "レシピ箱",
+  "description": "夫婦で共有するレシピURL管理アプリ",
+  "start_url": ".",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff8f1",
+  "theme_color": "#d9642c",
+  "lang": "ja",
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "share_target": {
+    "action": "./add.html",
+    "method": "GET",
+    "params": { "url": "url", "text": "text", "title": "title" }
+  }
+}

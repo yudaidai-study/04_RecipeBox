@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="レシピ箱">
+  <meta name="theme-color" content="#d9642c">
+  <meta name="description" content="夫婦で共有するレシピURL管理アプリ">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.json">
+  <title>レシピ箱</title>
+  <link rel="stylesheet" href="./css/app.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="app-brand">
+        <svg class="brand-mark" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="36" height="36" rx="9" fill="rgba(255,255,255,0.18)"/>
+          <path d="M9 17h18a1 1 0 0 1 1 1 9 9 0 0 1-9 9h0a9 9 0 0 1-9-9 1 1 0 0 1 1-1Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M11 17c0-3 1.5-4.5 1.5-6M18 17c0-3.5 2-5 2-7.5M25 17c0-3 1.5-4.5 1.5-6" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <div class="brand-text">
+          <h1>レシピ箱</h1>
+          <p class="brand-sub">2人でつくる、我が家のレシピ帳</p>
+        </div>
+        <div class="header-actions">
+          <button id="logout-btn" class="icon-btn" aria-label="ログアウト" title="ログアウト">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button id="today-cta" class="today-cta" type="button">
+        <span class="dice">🎲</span>
+        <span class="today-cta-text">
+          <strong>今日は何作る?</strong>
+          <span>カテゴリからランダムに1品提案します</span>
+        </span>
+        <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </header>
+
+    <nav id="category-tabs" class="category-tabs" aria-label="カテゴリで絞り込み"></nav>
+
+    <main>
+      <div id="state-loading" class="skeleton-grid hidden">
+        <div class="skeleton-card skeleton-shimmer"><div class="thumb"></div><div class="lines"><div class="line"></div><div class="line short"></div></div></div>
+        <div class="skeleton-card skeleton-shimmer"><div class="thumb"></div><div class="lines"><div class="line"></div><div class="line short"></div></div></div>
+        <div class="skeleton-card skeleton-shimmer"><div class="thumb"></div><div class="lines"><div class="line"></div><div class="line short"></div></div></div>
+        <div class="skeleton-card skeleton-shimmer"><div class="thumb"></div><div class="lines"><div class="line"></div><div class="line short"></div></div></div>
+      </div>
+
+      <div id="state-empty" class="empty-state hidden">
+        <div class="emoji">🍲</div>
+        <p>まだレシピがありません。<br>右下の＋ボタンからURLを保存しましょう。</p>
+      </div>
+
+      <div id="state-error" class="error-state hidden">
+        <div class="emoji">⚠️</div>
+        <p id="state-error-message">読み込みに失敗しました。</p>
+        <br>
+        <button id="retry-btn" class="btn btn-secondary" type="button" style="width:auto; padding-left:24px; padding-right:24px;">もう一度読み込む</button>
+      </div>
+
+      <div id="recipe-grid" class="recipe-grid"></div>
+    </main>
+
+    <a id="fab-add" class="fab" href="./add.html" aria-label="レシピを追加">＋</a>
+  </div>
+
+  <!-- ログイン -->
+  <div id="login-overlay" class="overlay center">
+    <div class="sheet login-panel">
+      <svg class="brand-mark" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="background:linear-gradient(135deg,#d9642c,#f2994a); border-radius:14px;">
+        <path d="M9 17h18a1 1 0 0 1 1 1 9 9 0 0 1-9 9h0a9 9 0 0 1-9-9 1 1 0 0 1 1-1Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M11 17c0-3 1.5-4.5 1.5-6M18 17c0-3.5 2-5 2-7.5M25 17c0-3 1.5-4.5 1.5-6" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <h2>レシピ箱</h2>
+      <p>共有パスワードを入力してください</p>
+
+      <div id="login-not-configured" class="form-error">
+        Supabaseがまだ設定されていません。<code>js/config.js</code> にProject URLとanon keyを設定してください。
+      </div>
+
+      <form id="login-form">
+        <div id="login-error" class="form-error"></div>
+        <div class="field">
+          <label for="login-password">パスワード</label>
+          <input id="login-password" type="password" autocomplete="current-password" required>
+        </div>
+        <button id="login-submit" class="btn btn-primary" type="submit">ログイン</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- レシピ詳細 -->
+  <div id="detail-overlay" class="overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <button class="sheet-close" id="detail-close" aria-label="閉じる">✕</button>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+  <!-- 今日は何作る -->
+  <div id="random-overlay" class="overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <button class="sheet-close" id="random-close" aria-label="閉じる">✕</button>
+
+      <div id="random-step-pick">
+        <h2 style="margin:4px 0 4px; font-size:18px;">今日は何作る?</h2>
+        <p style="margin:0 0 18px; color:var(--text-2); font-size:13px;">カテゴリを選んで決めよう</p>
+        <div id="random-cats" class="picker-cats"></div>
+        <button id="random-confirm" class="btn btn-primary" type="button">決める!</button>
+      </div>
+
+      <div id="random-step-loading" class="reveal-wrap hidden">
+        <span class="spin-emoji">🍳</span>
+        <p style="color:var(--text-2); margin-top:14px;">選んでいます…</p>
+      </div>
+
+      <div id="random-step-empty" class="empty-state hidden">
+        <div class="emoji">🤔</div>
+        <p>このカテゴリにはまだレシピがありません。</p>
+      </div>
+
+      <div id="random-step-result" class="reveal-wrap hidden">
+        <div id="random-result-content"></div>
+        <div class="btn-row" style="margin-top:16px;">
+          <button id="random-again" class="btn btn-secondary" type="button">もう一回</button>
+          <button id="random-open" class="btn btn-primary" type="button">このレシピを見る</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module" src="./js/app.js"></script>
+  <script src="./js/sw-register.js"></script>
+</body>
+</html>
