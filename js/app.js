@@ -1,6 +1,7 @@
 import { initAuth, signOut } from './auth.js';
 import * as api from './api.js';
 import * as ui from './ui.js';
+import { APP_VERSION } from './config.js';
 
 const state = {
   categories: [],
@@ -133,6 +134,9 @@ async function drawRandomRecipe({ avoidLastId }) {
 }
 
 function init() {
+  const versionEl = document.getElementById('app-version');
+  if (versionEl) versionEl.textContent = APP_VERSION;
+
   ui.initUI({
     onSelectCategory(categoryId) {
       toggleCategoryId(state.activeCategoryIds, categoryId);

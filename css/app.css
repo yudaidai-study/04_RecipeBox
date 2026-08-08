@@ -120,6 +120,17 @@ img {
   letter-spacing: 0.02em;
 }
 
+.app-version {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 2px 8px;
+  vertical-align: middle;
+}
+
 .brand-sub {
   margin: 2px 0 0;
   font-size: 12.5px;
