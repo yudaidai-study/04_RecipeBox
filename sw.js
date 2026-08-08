@@ -1,10 +1,11 @@
-const CACHE = 'recipebox-v6';
+const CACHE = 'recipebox-v7';
 const SUPABASE_JS_URL = 'https://esm.sh/@supabase/supabase-js@2.111.0';
 
 const ASSETS = [
   './',
   './index.html',
   './add.html',
+  './calendar.html',
   './manifest.json',
   './css/app.css',
   './js/config.js',
@@ -14,6 +15,8 @@ const ASSETS = [
   './js/ui.js',
   './js/app.js',
   './js/add.js',
+  './js/calendar.js',
+  './js/dateutils.js',
   './js/sw-register.js',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',

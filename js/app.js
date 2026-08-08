@@ -2,6 +2,7 @@ import { initAuth, signOut } from './auth.js';
 import * as api from './api.js';
 import * as ui from './ui.js';
 import { APP_VERSION } from './config.js';
+import { dateKey, todayDate } from './dateutils.js';
 
 const state = {
   categories: [],
@@ -14,6 +15,11 @@ const state = {
   filterDraftMinRating: null,
   detailRecipe: null,
   detailCategoryNames: [],
+  // 編集ポップアップを開いている間だけの下書き(「保存する」を押すまでDBへ反映しない)
+  editDraftCategoryIds: new Set(),
+  editDraftRating: null,
+  // 献立に追加するレシピのid(詳細画面・今日は何作る結果画面のどちらから開いたかは問わない)
+  mealPlanTargetRecipeId: null,
   randomCategoryIds: new Set(),
   randomMinRating: null,
   randomLastId: null,
@@ -83,23 +89,24 @@ async function openDetail(id) {
   }
 }
 
-async function handleRatingSelect(value) {
+// タグ・評価の編集(⑪): 詳細画面では表示のみ、実際の変更はedit-overlayの下書きに対して行い、
+// 「保存する」を押した時点でまとめてDBへ反映する。
+async function handleEditSave() {
   const recipe = state.detailRecipe;
   if (!recipe) return;
-  const next = recipe.rating === value ? null : value; // 同じ星を再タップで評価解除
-  const prev = recipe.rating;
-
-  recipe.rating = next;
-  ui.renderDetail(recipe, state.detailCategoryNames);
-
+  ui.setEditSaving(true);
   try {
-    await api.updateRating(recipe.id, next);
-    loadRecipes(); // 一覧側の星表示にも反映
+    await api.updateRecipeCategories(recipe.id, [...state.editDraftCategoryIds]);
+    await api.updateRating(recipe.id, state.editDraftRating);
+    ui.closeEditOverlay();
+    ui.toast('更新しました');
+    await openDetail(recipe.id); // 詳細を再取得して反映
+    loadRecipes(); // 一覧側にも反映
   } catch (err) {
     console.error(err);
-    recipe.rating = prev;
-    ui.renderDetail(recipe, state.detailCategoryNames);
-    ui.toast('評価の保存に失敗しました');
+    ui.toast('更新に失敗しました');
+  } finally {
+    ui.setEditSaving(false);
   }
 }
 
@@ -206,8 +213,52 @@ function init() {
     onDetailDelete() {
       handleDetailDelete();
     },
-    onRatingSelect(value) {
-      handleRatingSelect(value);
+    onDetailAddToPlan() {
+      if (!state.detailRecipe) return;
+      state.mealPlanTargetRecipeId = state.detailRecipe.id;
+      ui.openMealPlanAddOverlay(dateKey(todayDate()));
+    },
+    onRandomAddToPlan() {
+      if (!state.randomRecipe) return;
+      state.mealPlanTargetRecipeId = state.randomRecipe.id;
+      ui.openMealPlanAddOverlay(dateKey(todayDate()));
+    },
+    onMealPlanAddClose() {
+      ui.closeMealPlanAddOverlay();
+    },
+    async onMealPlanAddConfirm(dateValue) {
+      if (!state.mealPlanTargetRecipeId || !dateValue) return;
+      try {
+        const added = await api.addMealPlanEntry(dateValue, state.mealPlanTargetRecipeId);
+        ui.closeMealPlanAddOverlay();
+        ui.toast(added ? '献立に追加しました' : 'その日にはすでに追加済みです');
+      } catch (err) {
+        console.error(err);
+        ui.toast('献立への追加に失敗しました');
+      }
+    },
+    onDetailEdit() {
+      const recipe = state.detailRecipe;
+      if (!recipe) return;
+      state.editDraftCategoryIds = new Set((recipe.recipe_categories || []).map((rc) => rc.category_id));
+      state.editDraftRating = recipe.rating;
+      ui.renderEditGroups(state.categories, state.editDraftCategoryIds);
+      ui.renderEditRating(state.editDraftRating);
+      ui.openEditOverlay();
+    },
+    onEditClose() {
+      ui.closeEditOverlay();
+    },
+    onEditChipToggle(categoryId) {
+      toggleCategoryId(state.editDraftCategoryIds, categoryId);
+      ui.renderEditGroups(state.categories, state.editDraftCategoryIds);
+    },
+    onEditRatingSelect(value) {
+      state.editDraftRating = state.editDraftRating === value ? null : value; // 同じ星を再タップで評価解除
+      ui.renderEditRating(state.editDraftRating);
+    },
+    onEditSave() {
+      handleEditSave();
     },
     onRandomCatSelect(categoryId) {
       toggleCategoryId(state.randomCategoryIds, categoryId);

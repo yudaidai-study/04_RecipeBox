@@ -350,6 +350,14 @@ main {
 .rating-stars.interactive .star-btn.filled {
   color: var(--amber-2);
 }
+/* 詳細画面: タップでは編集させない表示専用の大きめ表示(⑪、編集はedit-overlayで行う) */
+.rating-stars.lg {
+  gap: 2px;
+  margin: 0 0 14px;
+}
+.rating-stars.lg .star-ico {
+  font-size: 24px;
+}
 
 .cat-tag-row {
   display: flex;
@@ -710,6 +718,149 @@ main {
 .save-done .emoji { font-size: 48px; margin-bottom: 14px; }
 .save-done h2 { margin: 0 0 8px; font-size: 18px; }
 .save-done p { margin: 0 0 22px; color: var(--text-2); font-size: 13.5px; line-height: 1.7; }
+
+/* ===== calendar.html 専用(献立カレンダー) ===== */
+
+.cal-toolbar {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #fff;
+}
+.cal-toolbar .btn-text {
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 16px;
+}
+.cal-range-label {
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 11em;
+  text-align: center;
+}
+
+.calendar-page main {
+  padding: 16px 16px 60px;
+}
+
+#cal-autofill-btn {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-cell {
+  min-height: 68px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  cursor: pointer;
+  text-align: left;
+}
+.cal-cell.dim { opacity: 0.4; }
+.cal-cell.today { border-color: var(--accent); border-width: 2px; }
+
+.cal-daynum {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.cal-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+.cal-entry-chip {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--accent-2);
+  background: var(--accent-soft);
+  border-radius: 5px;
+  padding: 1px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.cal-entry-more {
+  font-size: 9.5px;
+  color: var(--text-3);
+}
+
+.cal-empty-note {
+  font-size: 13px;
+  color: var(--text-3);
+  margin: 8px 0;
+}
+
+.day-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--sep);
+}
+.day-entry:last-child { border-bottom: none; }
+.day-entry .thumb {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+}
+.day-entry .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.day-entry .title { flex: 1; font-size: 13.5px; font-weight: 600; margin: 0; line-height: 1.4; }
+.icon-btn.small { width: 30px; height: 30px; background: var(--surface-2); color: var(--text-2); }
+.icon-btn.small svg { width: 14px; height: 14px; }
+
+.day-recipe-results {
+  margin-top: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.day-recipe-result {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid var(--sep);
+  background: var(--surface-1);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.day-recipe-result:last-child { border-bottom: none; }
+.day-recipe-result:active { background: var(--surface-2); }
 
 /* ===== レスポンシブ ===== */
 

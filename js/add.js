@@ -8,10 +8,13 @@ const errorBox = document.getElementById('add-error');
 const saveBtn = document.getElementById('save-btn');
 const prefillNote = document.getElementById('prefill-note');
 const saveDone = document.getElementById('save-done');
+const saveDoneEmoji = document.getElementById('save-done-emoji');
+const saveDoneTitle = document.getElementById('save-done-title');
 const saveDoneNote = document.getElementById('save-done-note');
 
 const tagPicker = document.getElementById('tag-picker');
 const freeTagRow = document.getElementById('free-tag-row');
+const freeTagSuggestions = document.getElementById('free-tag-suggestions');
 
 const newCatToggle = document.getElementById('new-cat-toggle');
 const newCatToggleWrap = document.getElementById('new-cat-toggle-wrap');
@@ -24,6 +27,8 @@ const ratingPicker = document.getElementById('rating-picker');
 
 const selectedCategoryIds = new Set();
 let selectedRating = null;
+// 自由入力タグの予測変換(datalist)用に、画面には出さず全件だけ保持しておく。
+let allFreeCategories = [];
 
 function prefillFromQuery() {
   const params = new URLSearchParams(location.search);
@@ -53,18 +58,32 @@ function tagChip(cat) {
   return btn;
 }
 
-// 自由入力タグの一覧は読み込まない: この画面で新しく追加したタグだけをfreeTagRowに表示する(④)。
+// 自由入力タグはチップとして一覧表示しない(④): この画面で新しく追加したタグだけをfreeTagRowに表示する。
+// 既存の自由入力タグ名は、新規タグ入力欄の予測変換(datalist)候補としてのみ使う(⑨)。
 async function loadCategoriesIntoPicker() {
   try {
     const categories = await api.listCategories();
     for (const cat of categories) {
-      if (!cat.group_key) continue;
-      const row = tagPicker.querySelector(`.tag-row[data-group="${cat.group_key}"]`);
-      row?.appendChild(tagChip(cat));
+      if (cat.group_key) {
+        const row = tagPicker.querySelector(`.tag-row[data-group="${cat.group_key}"]`);
+        row?.appendChild(tagChip(cat));
+      } else {
+        allFreeCategories.push(cat);
+      }
     }
+    renderFreeTagSuggestions();
   } catch (err) {
     console.error(err);
     showError('カテゴリの読み込みに失敗しました');
+  }
+}
+
+function renderFreeTagSuggestions() {
+  freeTagSuggestions.innerHTML = '';
+  for (const cat of allFreeCategories) {
+    const opt = document.createElement('option');
+    opt.value = cat.name;
+    freeTagSuggestions.appendChild(opt);
   }
 }
 
@@ -103,6 +122,14 @@ newCatToggle.addEventListener('click', () => {
   newCatInput.focus();
 });
 
+// プルダウン(datalist)候補を選んだ後や既存タグ名を入力した後、Enterでそのまま追加できるように。
+newCatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    newCatAdd.click();
+  }
+});
+
 newCatAdd.addEventListener('click', async () => {
   const name = newCatInput.value.trim();
   if (!name) return;
@@ -112,6 +139,11 @@ newCatAdd.addEventListener('click', async () => {
     // 既存の同名タグが既にどこかのグループに表示されている場合は重複追加しない
     if (!tagPicker.querySelector(`.cat-chip[data-id="${cat.id}"]`)) {
       freeTagRow.appendChild(tagChip(cat));
+    }
+    // 新規作成した自由入力タグは、以降の予測変換候補にも加える
+    if (!allFreeCategories.some((c) => c.id === cat.id)) {
+      allFreeCategories.push(cat);
+      renderFreeTagSuggestions();
     }
     const chip = tagPicker.querySelector(`.cat-chip[data-id="${cat.id}"]`);
     if (chip && !selectedCategoryIds.has(cat.id)) {
@@ -128,6 +160,16 @@ newCatAdd.addEventListener('click', async () => {
     newCatAdd.disabled = false;
   }
 });
+
+// 保存成功/重複いずれの場合も同じ完了画面(絵文字・見出し・説明文とボタン行)を使い回す(⑩)。
+function showCompletionScreen({ emoji, title, note }) {
+  form.classList.add('hidden');
+  prefillNote.classList.add('hidden');
+  saveDoneEmoji.textContent = emoji;
+  saveDoneTitle.textContent = title;
+  saveDoneNote.textContent = note;
+  saveDone.classList.remove('hidden');
+}
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -146,16 +188,24 @@ form.addEventListener('submit', async (e) => {
       memo: memoInput.value.trim(),
       rating: selectedRating,
     });
-    form.classList.add('hidden');
-    prefillNote.classList.add('hidden');
-    saveDoneNote.textContent =
-      recipe.fetch_status === 'failed'
+    showCompletionScreen({
+      emoji: '✅',
+      title: '保存しました',
+      note: recipe.fetch_status === 'failed'
         ? '保存しました(ページの取得には失敗しましたが、URLは保存されています)。このタブは閉じて大丈夫です。'
-        : 'このタブは閉じて大丈夫です。';
-    saveDone.classList.remove('hidden');
+        : 'このタブは閉じて大丈夫です。',
+    });
   } catch (err) {
     console.error(err);
-    showError(err.message || '保存に失敗しました。');
+    if (err.code === 'duplicate') {
+      showCompletionScreen({
+        emoji: '📌',
+        title: 'すでに登録されています',
+        note: `「${err.recipe?.title || url}」はすでに保存済みです。このタブは閉じて大丈夫です。`,
+      });
+    } else {
+      showError(err.message || '保存に失敗しました。');
+    }
   } finally {
     saveBtn.disabled = false;
     saveBtn.textContent = '保存する';

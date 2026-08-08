@@ -112,8 +112,35 @@ export function initUI(h) {
     if (action === 'open-original') handlers.onDetailOpenOriginal?.();
     if (action === 'toggle-archive') handlers.onDetailToggleArchive?.();
     if (action === 'delete') handlers.onDetailDelete?.();
-    if (action === 'set-rating') handlers.onRatingSelect?.(Number(btn.dataset.value));
+    if (action === 'edit') handlers.onDetailEdit?.();
+    if (action === 'add-to-plan') handlers.onDetailAddToPlan?.();
   });
+
+  document.getElementById('mealplan-add-close').addEventListener('click', () => handlers.onMealPlanAddClose?.());
+  document.getElementById('mealplan-add-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'mealplan-add-overlay') handlers.onMealPlanAddClose?.();
+  });
+  document.getElementById('mealplan-add-confirm').addEventListener('click', () => {
+    const dateValue = document.getElementById('mealplan-date-input').value;
+    handlers.onMealPlanAddConfirm?.(dateValue);
+  });
+
+  document.getElementById('edit-close').addEventListener('click', () => handlers.onEditClose?.());
+  document.getElementById('edit-cancel').addEventListener('click', () => handlers.onEditClose?.());
+  document.getElementById('edit-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'edit-overlay') handlers.onEditClose?.();
+  });
+  document.getElementById('edit-cat-groups').addEventListener('click', (e) => {
+    const chip = e.target.closest('.cat-chip');
+    if (!chip) return;
+    handlers.onEditChipToggle?.(chip.dataset.id);
+  });
+  document.getElementById('edit-rating-row').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="set-rating"]');
+    if (!btn) return;
+    handlers.onEditRatingSelect?.(Number(btn.dataset.value));
+  });
+  document.getElementById('edit-save').addEventListener('click', () => handlers.onEditSave?.());
 
   document.getElementById('random-overlay').addEventListener('click', (e) => {
     if (e.target.id === 'random-overlay') closeRandomOverlay();
@@ -133,6 +160,7 @@ export function initUI(h) {
   document.getElementById('random-confirm').addEventListener('click', () => handlers.onRandomConfirm?.());
   document.getElementById('random-again').addEventListener('click', () => handlers.onRandomAgain?.());
   document.getElementById('random-open').addEventListener('click', () => handlers.onRandomOpen?.());
+  document.getElementById('random-add-to-plan').addEventListener('click', () => handlers.onRandomAddToPlan?.());
 }
 
 /* ===== 一覧画面 ===== */
@@ -219,7 +247,7 @@ export function renderDetail(recipe, categoryNames) {
   document.getElementById('detail-content').innerHTML = `
     <div class="detail-thumb">${thumbHtml(recipe.image_url)}</div>
     <h2 class="detail-title">${escHtml(recipe.title || recipe.url)}</h2>
-    <div class="rating-stars interactive">${starsHtml(recipe.rating, true)}</div>
+    <div class="rating-stars lg">${starsHtml(recipe.rating, false)}</div>
     <div class="detail-meta">
       ${tagsHtml}
       ${dateStr ? `<span style="font-size:12px; color:var(--text-2);">${escHtml(dateStr)} 保存${sizeStr ? ` ・ ${escHtml(sizeStr)}` : ''}</span>` : ''}
@@ -228,11 +256,49 @@ export function renderDetail(recipe, categoryNames) {
     ${recipe.memo ? `<div class="detail-memo">${escHtml(recipe.memo)}</div>` : ''}
     <div class="detail-actions">
       <button class="btn btn-primary" data-action="open-original" type="button">元のレシピを見る</button>
+      <button class="btn btn-secondary" data-action="edit" type="button">タグ・評価を編集</button>
+      <button class="btn btn-secondary" data-action="add-to-plan" type="button">献立に追加</button>
       ${archiveButton}
       <button class="btn btn-danger" data-action="delete" type="button">削除</button>
     </div>
     <div id="archive-frame-wrap" class="archive-frame-wrap hidden"></div>
   `;
+}
+
+/* ===== 献立に追加(日付選択) ===== */
+
+export function openMealPlanAddOverlay(defaultDateKey) {
+  const input = document.getElementById('mealplan-date-input');
+  if (defaultDateKey) input.value = defaultDateKey;
+  document.getElementById('mealplan-add-overlay').classList.add('open');
+}
+
+export function closeMealPlanAddOverlay() {
+  document.getElementById('mealplan-add-overlay').classList.remove('open');
+}
+
+/* ===== レシピ編集(タグ・評価) ===== */
+
+export function openEditOverlay() {
+  document.getElementById('edit-overlay').classList.add('open');
+}
+
+export function closeEditOverlay() {
+  document.getElementById('edit-overlay').classList.remove('open');
+}
+
+export function renderEditGroups(categories, activeIds) {
+  document.getElementById('edit-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds);
+}
+
+export function renderEditRating(rating) {
+  document.getElementById('edit-rating-row').innerHTML = starsHtml(rating, true);
+}
+
+export function setEditSaving(isSaving) {
+  const btn = document.getElementById('edit-save');
+  btn.disabled = isSaving;
+  btn.textContent = isSaving ? '保存中…' : '保存する';
 }
 
 export function toggleArchiveView(rawHtml) {

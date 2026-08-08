@@ -131,7 +131,11 @@ export async function saveRecipe({ url, categoryIds, memo, rating }) {
     throw new Error(message);
   }
   if (!data?.ok) {
-    throw new Error(data?.message || '保存に失敗しました。');
+    // code: 'duplicate' の場合はdata.recipeに既存レシピの情報が入る(⑩の重複表示で使う)
+    const err = new Error(data?.message || '保存に失敗しました。');
+    err.code = data?.code;
+    err.recipe = data?.recipe;
+    throw err;
   }
   return data.recipe;
 }
@@ -142,8 +146,57 @@ export async function updateRating(id, rating) {
   if (error) throw error;
 }
 
+// 既存の紐付けを一旦全削除してから選択中のカテゴリで貼り直す(差分更新はせず単純化)。
+export async function updateRecipeCategories(recipeId, categoryIds) {
+  assertReady();
+  const { error: delError } = await supabase.from('recipe_categories').delete().eq('recipe_id', recipeId);
+  if (delError) throw delError;
+  if (categoryIds.length > 0) {
+    const { error: insError } = await supabase
+      .from('recipe_categories')
+      .insert(categoryIds.map((category_id) => ({ recipe_id: recipeId, category_id })));
+    if (insError) throw insError;
+  }
+}
+
 export async function deleteRecipe(id) {
   assertReady();
   const { error } = await supabase.from('recipes').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/* ===== 献立カレンダー ===== */
+
+// fromKey/toKey は 'YYYY-MM-DD' の日付文字列(両端含む)。
+export async function listMealPlan(fromKey, toKey) {
+  assertReady();
+  const { data, error } = await supabase
+    .from('meal_plan')
+    .select('id, date, recipe_id, recipes(id, title, image_url, url)')
+    .gte('date', fromKey)
+    .lte('date', toKey)
+    .order('date', { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+// 既に同じ日に同じレシピが登録済み(unique制約違反)の場合はnullを返し、エラー扱いにしない。
+export async function addMealPlanEntry(dateKey, recipeId) {
+  assertReady();
+  const { data, error } = await supabase
+    .from('meal_plan')
+    .insert({ date: dateKey, recipe_id: recipeId })
+    .select('id, date, recipe_id')
+    .single();
+  if (error) {
+    if (error.code === '23505') return null;
+    throw error;
+  }
+  return data;
+}
+
+export async function removeMealPlanEntry(id) {
+  assertReady();
+  const { error } = await supabase.from('meal_plan').delete().eq('id', id);
   if (error) throw error;
 }

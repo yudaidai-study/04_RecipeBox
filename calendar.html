@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="レシピ箱">
+  <meta name="theme-color" content="#d9642c">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.json">
+  <title>献立カレンダー - レシピ箱</title>
+  <link rel="stylesheet" href="./css/app.css">
+</head>
+<body class="calendar-page">
+  <div id="app">
+    <header class="app-header" style="padding-bottom:16px;">
+      <div class="app-brand">
+        <a href="./index.html" class="icon-btn" aria-label="一覧へ戻る">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        <div class="brand-text">
+          <h1 style="font-size:18px;">献立カレンダー</h1>
+        </div>
+        <div class="header-actions">
+          <button id="range-toggle-btn" class="icon-btn" aria-label="表示期間を切り替え" title="表示期間を切り替え">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="cal-toolbar">
+        <button id="cal-prev" class="btn-text" type="button" aria-label="前へ">◀</button>
+        <span id="cal-range-label" class="cal-range-label"></span>
+        <button id="cal-next" class="btn-text" type="button" aria-label="次へ">▶</button>
+      </div>
+    </header>
+
+    <main>
+      <button id="cal-autofill-btn" class="btn btn-secondary" type="button">空いてる日をランダムで埋める</button>
+
+      <div class="cal-weekdays">
+        <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+      </div>
+      <div id="cal-grid" class="cal-grid"></div>
+    </main>
+  </div>
+
+  <!-- ログイン(Shortcuts経由でSafariから直接開いた場合、standaloneアプリとはセッションが別のため必要) -->
+  <div id="login-overlay" class="overlay center">
+    <div class="sheet login-panel">
+      <svg class="brand-mark" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="background:linear-gradient(135deg,#d9642c,#f2994a); border-radius:14px;">
+        <path d="M9 17h18a1 1 0 0 1 1 1 9 9 0 0 1-9 9h0a9 9 0 0 1-9-9 1 1 0 0 1 1-1Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M11 17c0-3 1.5-4.5 1.5-6M18 17c0-3.5 2-5 2-7.5M25 17c0-3 1.5-4.5 1.5-6" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <h2>レシピ箱</h2>
+      <p>共有パスワードを入力してください</p>
+
+      <div id="login-not-configured" class="form-error">
+        Supabaseがまだ設定されていません。<code>js/config.js</code> にProject URLとanon keyを設定してください。
+      </div>
+
+      <form id="login-form">
+        <div id="login-error" class="form-error"></div>
+        <div class="field">
+          <label for="login-password">パスワード</label>
+          <input id="login-password" type="password" autocomplete="current-password" required>
+        </div>
+        <button id="login-submit" class="btn btn-primary" type="submit">ログイン</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 日付詳細(その日の献立一覧+レシピ追加) -->
+  <div id="day-overlay" class="overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <button class="sheet-close" id="day-close" aria-label="閉じる">✕</button>
+      <h2 id="day-title" style="margin:4px 0 16px; font-size:18px;"></h2>
+
+      <div id="day-entries"></div>
+
+      <div class="field" style="margin-top:18px;">
+        <label for="day-recipe-search">レシピを追加</label>
+        <input id="day-recipe-search" type="text" placeholder="レシピ名で検索" autocomplete="off">
+      </div>
+      <div id="day-recipe-results" class="day-recipe-results"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module" src="./js/calendar.js"></script>
+  <script src="./js/sw-register.js"></script>
+</body>
+</html>

@@ -56,10 +56,11 @@
               <p class="tag-group-label">自由入力</p>
               <div class="tag-row" id="free-tag-row"></div>
               <div id="new-cat-toggle-wrap">
-                <button id="new-cat-toggle" class="btn-text" type="button" style="padding:8px 0;">＋ 新しいタグを追加</button>
+                <button id="new-cat-toggle" class="btn-text" type="button" style="padding:8px 0;">＋ タグを追加</button>
               </div>
               <div id="new-cat-row" class="new-cat-row hidden">
-                <input id="new-cat-input" type="text" placeholder="新しいタグ名" maxlength="30">
+                <input id="new-cat-input" type="text" placeholder="タグ名(既存候補から選択も可)" maxlength="30" list="free-tag-suggestions" autocomplete="off">
+                <datalist id="free-tag-suggestions"></datalist>
                 <button id="new-cat-add" type="button">追加</button>
               </div>
             </div>
@@ -80,8 +81,8 @@
       </form>
 
       <div id="save-done" class="save-done hidden">
-        <div class="emoji">✅</div>
-        <h2>保存しました</h2>
+        <div id="save-done-emoji" class="emoji">✅</div>
+        <h2 id="save-done-title">保存しました</h2>
         <p id="save-done-note">このタブは閉じて大丈夫です。</p>
         <div class="btn-row">
           <button id="save-again-btn" class="btn btn-secondary" type="button">続けてもう1件保存</button>

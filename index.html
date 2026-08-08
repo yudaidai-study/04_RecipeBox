@@ -28,6 +28,9 @@
           <p class="brand-sub">2人でつくる、我が家のレシピ帳</p>
         </div>
         <div class="header-actions">
+          <a href="./calendar.html" class="icon-btn" aria-label="献立カレンダー" title="献立カレンダー">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </a>
           <button id="filter-btn" class="icon-btn" aria-label="フィルタ" title="フィルタ">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="4 4 20 4 14 12 14 19 10 21 10 12 4 4"/></svg>
             <span id="filter-badge" class="filter-badge hidden">0</span>
@@ -144,6 +147,38 @@
           <button id="random-again" class="btn btn-secondary" type="button">もう一回</button>
           <button id="random-open" class="btn btn-primary" type="button">このレシピを見る</button>
         </div>
+        <button id="random-add-to-plan" class="btn btn-secondary" type="button" style="margin-top:10px;">献立に追加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 献立に追加(日付選択) -->
+  <div id="mealplan-add-overlay" class="overlay center">
+    <div class="sheet login-panel" style="text-align:left; padding-top:20px;">
+      <button class="sheet-close" id="mealplan-add-close" aria-label="閉じる">✕</button>
+      <h2 style="margin:0 0 16px; font-size:18px;">献立に追加</h2>
+      <div class="field">
+        <label for="mealplan-date-input">日付</label>
+        <input id="mealplan-date-input" type="date">
+      </div>
+      <button id="mealplan-add-confirm" class="btn btn-primary" type="button">この日に追加する</button>
+    </div>
+  </div>
+
+  <!-- レシピ編集(タグ・評価) -->
+  <div id="edit-overlay" class="overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <button class="sheet-close" id="edit-close" aria-label="閉じる">✕</button>
+      <h2 style="margin:4px 0 16px; font-size:18px;">タグ・評価を編集</h2>
+      <div class="tag-group">
+        <p class="tag-group-label">評価</p>
+        <div id="edit-rating-row" class="rating-stars interactive"></div>
+      </div>
+      <div id="edit-cat-groups"></div>
+      <div class="btn-row" style="margin-top:20px;">
+        <button id="edit-cancel" class="btn btn-secondary" type="button">キャンセル</button>
+        <button id="edit-save" class="btn btn-primary" type="button">保存する</button>
       </div>
     </div>
   </div>

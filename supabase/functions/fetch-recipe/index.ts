@@ -270,6 +270,17 @@ Deno.serve(async (req: Request) => {
       { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } },
     );
 
+    // 同一URLが既に登録済みなら、ページ取得はせずに重複である旨を返す(⑩)。
+    const { data: existing, error: existingError } = await supabase
+      .from('recipes')
+      .select('id, title, image_url, url')
+      .eq('url', parsed.href)
+      .maybeSingle();
+    if (existingError) return jsonError('db_query_failed', existingError.message, 500);
+    if (existing) {
+      return jsonRes({ ok: false, code: 'duplicate', message: 'このURLはすでに登録されています。', recipe: existing });
+    }
+
     const page = await fetchPageSafely(parsed.href);
 
     const { data, error } = await supabase
