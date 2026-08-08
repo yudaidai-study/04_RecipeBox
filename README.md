@@ -25,9 +25,12 @@
 
 ### 3. Edge Functionをデプロイ
 
-**Edge Functions → Deploy a new function → Via Editor** で関数名 `fetch-recipe` を指定し、[`supabase/functions/fetch-recipe/index.ts`](supabase/functions/fetch-recipe/index.ts) の内容を貼り付けてデプロイする。CLIやNode.jsのインストールは不要。
+**Edge Functions → Deploy a new function → Via Editor** で、以下2つの関数をそれぞれデプロイする。CLIやNode.jsのインストールは不要。
 
-既にデプロイ済みの場合も、0002適用後は必ず最新の`index.ts`で再デプロイすること(カテゴリの受け渡し方法が`categoryId`単体から`categoryIds`配列に変わっているため)。
+- 関数名 `fetch-recipe`: [`supabase/functions/fetch-recipe/index.ts`](supabase/functions/fetch-recipe/index.ts)(URL保存時のページ取得・アーカイブ)
+- 関数名 `check-link`: [`supabase/functions/check-link/index.ts`](supabase/functions/check-link/index.ts)(「元のレシピを見る」を開いた際、そのリンクが今も生きているかの判定。生きていなければ保存済みアーカイブを自動表示する)
+
+既にデプロイ済みの場合も、0002適用後は必ず最新の`fetch-recipe/index.ts`で再デプロイすること(カテゴリの受け渡し方法が`categoryId`単体から`categoryIds`配列に変わっているため)。
 
 ### 4. アプリ側にSupabaseの接続情報を設定
 
@@ -39,7 +42,7 @@ export const SUPABASE_ANON_KEY = 'xxxxxxxxxxxx';                   // 手順1で
 export const LOGIN_EMAIL = 'your-family-login@example.com';        // 手順1で作成したログイン用メールアドレス
 ```
 
-`fetch-recipe` のCORS許可オリジンも、実際に公開するGitHub PagesのURLに合わせて [`supabase/functions/fetch-recipe/index.ts`](supabase/functions/fetch-recipe/index.ts) 冒頭の `PRODUCTION_ORIGINS` を必要に応じて書き換え、Edge Functionを再デプロイする(既定値は `https://yudaidai-study.github.io`)。
+`fetch-recipe`・`check-link` それぞれのCORS許可オリジンも、実際に公開するGitHub PagesのURLに合わせて各`index.ts`冒頭の `PRODUCTION_ORIGINS` を必要に応じて書き換え、Edge Functionを再デプロイする(既定値は `https://yudaidai-study.github.io`)。
 
 ### 5. GitHubで公開する
 
@@ -81,6 +84,6 @@ const CACHE = 'recipebox-v2';
 ## 既知の制約
 
 - Supabase無料プランは7日間APIアクセスがないとプロジェクトが一時停止する(データは消えない。ダッシュボードで再開できる)
-- サムネイル画像(`image_url`)は元サイトへの参照であり複製ではない。元サイト消滅後は表示できなくなる場合がある(タイトル・本文は実体コピーのため消えない)
+- サムネイル画像(`image_url`)、およびアーカイブ本文(`raw_html`)内の`<img>`が指す画像はいずれも元サイトへの参照であり、画像バイナリそのものはDBに複製・保存されていない。元サイトが消滅すると、一覧のサムネイルだけでなくアーカイブ内の画像も表示できなくなる(タイトル・本文テキストはコピー済みのため残る)
 - 一部サイトはボット対策によりアーカイブ取得に失敗することがある。その場合もURL自体は保存される
 - iOS SafariはWeb Share Target APIに対応していないため、共有シートからの保存はShortcuts経由が正式な手段

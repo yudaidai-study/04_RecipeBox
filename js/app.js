@@ -110,6 +110,26 @@ async function handleEditSave() {
   }
 }
 
+// 「元のレシピを見る」を開いた後、非同期でリンク生死を判定する(③)。結果が遅れて届いても構わない設計。
+// 判定中に詳細シートが閉じられた/別レシピに切り替わった場合は結果を無視する。
+async function checkOriginalLinkAndFallback(recipe) {
+  let reachable = true;
+  try {
+    reachable = await api.checkLinkReachable(recipe.url);
+  } catch (err) {
+    console.error(err);
+    return; // 判定自体に失敗した場合は何もしない(誤ってアーカイブに切り替えない)
+  }
+  if (reachable) return;
+  if (state.detailRecipe?.id !== recipe.id) return;
+  if (recipe.raw_html) {
+    ui.showArchiveFallback(recipe.raw_html);
+    ui.toast('リンク切れのようです。保存したアーカイブを表示しています');
+  } else {
+    ui.toast('リンク切れのようです(アーカイブは保存されていません)');
+  }
+}
+
 async function handleDetailDelete() {
   const recipe = state.detailRecipe;
   if (!recipe) return;
@@ -205,10 +225,10 @@ function init() {
       if (confirm('ログアウトしますか?')) signOut();
     },
     onDetailOpenOriginal() {
-      if (state.detailRecipe) window.open(state.detailRecipe.url, '_blank', 'noopener');
-    },
-    onDetailToggleArchive() {
-      if (state.detailRecipe?.raw_html) ui.toggleArchiveView(state.detailRecipe.raw_html);
+      const recipe = state.detailRecipe;
+      if (!recipe) return;
+      window.open(recipe.url, '_blank', 'noopener'); // クリック直後に開く(判定待ちにするとポップアップブロック対象になるため)
+      checkOriginalLinkAndFallback(recipe);
     },
     onDetailDelete() {
       handleDetailDelete();

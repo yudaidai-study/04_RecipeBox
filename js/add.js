@@ -7,6 +7,7 @@ const memoInput = document.getElementById('memo-input');
 const errorBox = document.getElementById('add-error');
 const saveBtn = document.getElementById('save-btn');
 const prefillNote = document.getElementById('prefill-note');
+const prefillCheckLoading = document.getElementById('prefill-check-loading');
 const saveDone = document.getElementById('save-done');
 const saveDoneEmoji = document.getElementById('save-done-emoji');
 const saveDoneTitle = document.getElementById('save-done-title');
@@ -35,8 +36,33 @@ function prefillFromQuery() {
   const url = params.get('url');
   if (url) {
     urlInput.value = url;
-    prefillNote.classList.remove('hidden');
   }
+  return url;
+}
+
+// 共有メニューから既に登録済みのURLが渡された場合(①)、フォームを見せずに
+// そのまま「すでに登録されています」画面へ遷移する。それ以外(URL未入力/新規URL)は
+// 通常どおりフォームを表示し、重複判定は保存ボタン押下時(saveRecipe内)に任せる。
+async function checkPrefillDuplicate(url) {
+  try {
+    const existing = await api.findRecipeByUrl(url);
+    if (existing) {
+      prefillCheckLoading.classList.add('hidden');
+      showCompletionScreen({
+        emoji: '📌',
+        title: 'すでに登録されています',
+        note: `「${existing.title || existing.url}」はすでに保存済みです。このタブは閉じて大丈夫です。`,
+      });
+      return;
+    }
+  } catch (err) {
+    console.error(err);
+    // 判定に失敗した場合は通常どおりフォームを表示し、保存時のサーバー側チェックに任せる
+  }
+  prefillCheckLoading.classList.add('hidden');
+  prefillNote.classList.remove('hidden');
+  form.classList.remove('hidden');
+  loadCategoriesIntoPicker();
 }
 
 function showError(msg) {
@@ -227,9 +253,18 @@ saveAgainBtn.addEventListener('click', () => {
 
 function init() {
   renderRatingPicker();
-  prefillFromQuery();
+  const prefillUrl = prefillFromQuery();
+  if (prefillUrl) {
+    // 判定が終わるまでフォームを見せない(ログイン画面の裏でチラつくのを防ぐため、authの結果を待つ前に隠す)
+    form.classList.add('hidden');
+    prefillCheckLoading.classList.remove('hidden');
+  }
   initAuth(() => {
-    loadCategoriesIntoPicker();
+    if (prefillUrl) {
+      checkPrefillDuplicate(prefillUrl);
+    } else {
+      loadCategoriesIntoPicker();
+    }
   });
 }
 

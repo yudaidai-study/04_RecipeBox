@@ -23,27 +23,17 @@
         <div class="brand-text">
           <h1 style="font-size:18px;">献立カレンダー</h1>
         </div>
-        <div class="header-actions">
-          <button id="range-toggle-btn" class="icon-btn" aria-label="表示期間を切り替え" title="表示期間を切り替え">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </button>
-        </div>
       </div>
 
       <div class="cal-toolbar">
-        <button id="cal-prev" class="btn-text" type="button" aria-label="前へ">◀</button>
+        <button id="cal-prev" class="btn-text" type="button" aria-label="前の週へ">◀</button>
         <span id="cal-range-label" class="cal-range-label"></span>
-        <button id="cal-next" class="btn-text" type="button" aria-label="次へ">▶</button>
+        <button id="cal-next" class="btn-text" type="button" aria-label="次の週へ">▶</button>
       </div>
     </header>
 
     <main>
-      <button id="cal-autofill-btn" class="btn btn-secondary" type="button">空いてる日をランダムで埋める</button>
-
-      <div class="cal-weekdays">
-        <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
-      </div>
-      <div id="cal-grid" class="cal-grid"></div>
+      <div id="cal-week-list" class="cal-week-list"></div>
     </main>
   </div>
 
@@ -81,11 +71,30 @@
 
       <div id="day-entries"></div>
 
-      <div class="field" style="margin-top:18px;">
-        <label for="day-recipe-search">レシピを追加</label>
-        <input id="day-recipe-search" type="text" placeholder="レシピ名で検索" autocomplete="off">
+      <div class="day-add-actions">
+        <button id="day-search-btn" class="btn btn-secondary" type="button">🔍 検索して追加</button>
+        <button id="day-random-btn" class="btn btn-secondary" type="button">🎲 ランダムで追加</button>
       </div>
-      <div id="day-recipe-results" class="day-recipe-results"></div>
+
+      <div id="day-filter-panel" class="day-filter-panel hidden">
+        <div id="day-filter-cats"></div>
+        <div class="tag-group">
+          <p class="tag-group-label">評価</p>
+          <div id="day-filter-rating-row" class="rating-stars interactive"></div>
+        </div>
+
+        <div id="day-search-results" class="day-recipe-results hidden"></div>
+
+        <div id="day-random-box" class="hidden">
+          <div id="day-random-content"></div>
+          <div class="btn-row" style="margin-top:10px;">
+            <button id="day-random-again" class="btn btn-secondary" type="button">もう一回</button>
+            <button id="day-random-add" class="btn btn-primary" type="button">この日に追加</button>
+          </div>
+        </div>
+
+        <p id="day-filter-empty" class="cal-empty-note hidden">条件に合うレシピが見つかりません</p>
+      </div>
     </div>
   </div>
 

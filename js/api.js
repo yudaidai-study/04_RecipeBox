@@ -114,6 +114,25 @@ export async function getRandomRecipe(categoryIds, minRating) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+// 共有メニュー経由の遷移時(①)に、保存ボタンを押す前でも登録済みかどうかを判定するための軽量チェック。
+// fetch-recipe Edge Functionを呼ばず、recipesテーブルへ直接問い合わせるだけなのでページ取得は発生しない。
+export async function findRecipeByUrl(url) {
+  assertReady();
+  let normalized;
+  try {
+    normalized = new URL(url).href; // fetch-recipe側の重複判定(parsed.href)と同じ正規化に揃える
+  } catch {
+    return null;
+  }
+  const { data, error } = await supabase
+    .from('recipes')
+    .select('id, title, image_url, url')
+    .eq('url', normalized)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function saveRecipe({ url, categoryIds, memo, rating }) {
   assertReady();
   const { data, error } = await supabase.functions.invoke('fetch-recipe', {
@@ -138,6 +157,20 @@ export async function saveRecipe({ url, categoryIds, memo, rating }) {
     throw err;
   }
   return data.recipe;
+}
+
+// 「元のレシピを見る」で開いたURLが現在も生きているかをサーバー側(Edge Function)で判定する(③)。
+// 判定自体が失敗した場合(関数エラー・ネットワーク不調など)は、誤ってアーカイブに切り替えないよう
+// 安全側に倒してreachable=true(リンク切れとは断定しない)を返す。
+export async function checkLinkReachable(url) {
+  assertReady();
+  try {
+    const { data, error } = await supabase.functions.invoke('check-link', { body: { url } });
+    if (error || !data?.ok) return true;
+    return !!data.reachable;
+  } catch {
+    return true;
+  }
 }
 
 export async function updateRating(id, rating) {

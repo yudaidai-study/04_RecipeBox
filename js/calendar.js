@@ -1,31 +1,44 @@
 import { initAuth } from './auth.js';
 import * as api from './api.js';
-import { dateKey, todayDate, addDays, startOfWeek, startOfMonth, addMonths } from './dateutils.js';
+import * as ui from './ui.js';
+import { dateKey, todayDate, addDays, startOfWeek } from './dateutils.js';
 
-const calGrid = document.getElementById('cal-grid');
+const calGrid = document.getElementById('cal-week-list');
 const calRangeLabel = document.getElementById('cal-range-label');
 const calPrev = document.getElementById('cal-prev');
 const calNext = document.getElementById('cal-next');
-const rangeToggleBtn = document.getElementById('range-toggle-btn');
-const autofillBtn = document.getElementById('cal-autofill-btn');
 
 const dayOverlay = document.getElementById('day-overlay');
 const dayClose = document.getElementById('day-close');
 const dayTitle = document.getElementById('day-title');
 const dayEntries = document.getElementById('day-entries');
-const dayRecipeSearch = document.getElementById('day-recipe-search');
-const dayRecipeResults = document.getElementById('day-recipe-results');
+
+const daySearchBtn = document.getElementById('day-search-btn');
+const dayRandomBtn = document.getElementById('day-random-btn');
+const dayFilterPanel = document.getElementById('day-filter-panel');
+const dayFilterCats = document.getElementById('day-filter-cats');
+const dayFilterRatingRow = document.getElementById('day-filter-rating-row');
+const daySearchResults = document.getElementById('day-search-results');
+const dayRandomBox = document.getElementById('day-random-box');
+const dayRandomContent = document.getElementById('day-random-content');
+const dayRandomAgainBtn = document.getElementById('day-random-again');
+const dayRandomAddBtn = document.getElementById('day-random-add');
+const dayFilterEmpty = document.getElementById('day-filter-empty');
 
 const toastEl = document.getElementById('toast');
 
 const WEEKDAY_JA = ['日', '月', '火', '水', '木', '金', '土'];
 
 const state = {
-  rangeMode: 'twoWeek', // 'twoWeek' | 'month'
-  anchorDate: todayDate(),
+  anchorDate: todayDate(), // 表示中の週を含む基準日
   entriesByDate: new Map(), // dateKey -> [{id, recipe_id, title, image_url, url}]
-  allRecipes: [], // 検索ピッカー用に一度だけ読み込む
+  categories: [], // 日別フィルタのカテゴリチップ用(開いたときに一度だけ読み込む)
   activeDayKey: null,
+  filterMode: null, // 'search' | 'random' | null
+  filterCategoryIds: new Set(),
+  filterMinRating: null,
+  lastSearchResults: [], // 検索結果クリック時にidから全情報を引くための一時キャッシュ
+  randomCandidate: null,
 };
 
 function escHtml(str) {
@@ -43,28 +56,16 @@ function toast(message) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2400);
 }
 
-// 2週間モード: 直近の日曜始まりで14日。1か月モード: その月を含む週単位の全日程(前後月の余白日込み)。
-function getGridDays() {
-  if (state.rangeMode === 'twoWeek') {
-    const start = startOfWeek(state.anchorDate);
-    return Array.from({ length: 14 }, (_, i) => addDays(start, i));
-  }
-  const first = startOfMonth(state.anchorDate);
-  const gridStart = startOfWeek(first);
-  const lastOfMonth = new Date(state.anchorDate.getFullYear(), state.anchorDate.getMonth() + 1, 0);
-  const gridEndWeekStart = startOfWeek(lastOfMonth);
-  const totalDays = Math.round((addDays(gridEndWeekStart, 6) - gridStart) / 86400000) + 1;
-  return Array.from({ length: totalDays }, (_, i) => addDays(gridStart, i));
+// 表示中の週(日曜始まり7日間)。
+function getWeekDays() {
+  const start = startOfWeek(state.anchorDate);
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 
 function updateRangeLabel(days) {
-  if (state.rangeMode === 'twoWeek') {
-    const first = days[0];
-    const last = days[days.length - 1];
-    calRangeLabel.textContent = `${first.getFullYear()}/${first.getMonth() + 1}/${first.getDate()} 〜 ${last.getMonth() + 1}/${last.getDate()}`;
-  } else {
-    calRangeLabel.textContent = `${state.anchorDate.getFullYear()}年${state.anchorDate.getMonth() + 1}月`;
-  }
+  const first = days[0];
+  const last = days[days.length - 1];
+  calRangeLabel.textContent = `${first.getFullYear()}/${first.getMonth() + 1}/${first.getDate()} 〜 ${last.getMonth() + 1}/${last.getDate()}`;
 }
 
 async function loadEntries(days) {
@@ -85,29 +86,40 @@ async function loadEntries(days) {
   }
 }
 
+function thumbHtml(imageUrl) {
+  const fallback = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg>`;
+  return `<span class="thumb-fallback">${fallback}</span>${
+    imageUrl ? `<img src="${escHtml(imageUrl)}" alt="" loading="lazy" onerror="this.remove()">` : ''
+  }`;
+}
+
+// 1週間を縦7段(曜日+日付 / 画像とメニュー名)で表示する(⑦)。
 function renderGrid() {
-  const days = getGridDays();
+  const days = getWeekDays();
   updateRangeLabel(days);
   const todayKey = dateKey(todayDate());
-  const currentMonth = state.anchorDate.getMonth();
 
   calGrid.innerHTML = days.map((d) => {
     const key = dateKey(d);
     const entries = state.entriesByDate.get(key) || [];
-    const isOtherMonth = state.rangeMode === 'month' && d.getMonth() !== currentMonth;
     const isToday = key === todayKey;
-    const chips = entries.slice(0, 2).map((e) => `<div class="cal-entry-chip">${escHtml(e.title)}</div>`).join('');
-    const more = entries.length > 2 ? `<div class="cal-entry-more">+${entries.length - 2}</div>` : '';
+    const entriesHtml = entries.length
+      ? entries.map((e) => `
+          <div class="cal-day-entry">
+            <div class="thumb">${thumbHtml(e.image_url)}</div>
+            <span class="title">${escHtml(e.title)}</span>
+          </div>`).join('')
+      : '<p class="cal-day-empty">まだ未定</p>';
     return `
-      <button type="button" class="cal-cell ${isOtherMonth ? 'dim' : ''} ${isToday ? 'today' : ''}" data-date="${key}">
-        <span class="cal-daynum">${d.getDate()}</span>
-        <span class="cal-entries">${chips}${more}</span>
+      <button type="button" class="cal-day-row ${isToday ? 'today' : ''}" data-date="${key}">
+        <div class="cal-day-label"><span class="wd">${WEEKDAY_JA[d.getDay()]}</span><span class="daynum">${d.getDate()}</span></div>
+        <div class="cal-day-content">${entriesHtml}</div>
       </button>`;
   }).join('');
 }
 
 async function refresh() {
-  const days = getGridDays();
+  const days = getWeekDays();
   updateRangeLabel(days);
   try {
     await loadEntries(days);
@@ -116,13 +128,6 @@ async function refresh() {
     toast('献立の読み込みに失敗しました');
   }
   renderGrid();
-}
-
-function thumbHtml(imageUrl) {
-  const fallback = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg>`;
-  return `<span class="thumb-fallback">${fallback}</span>${
-    imageUrl ? `<img src="${escHtml(imageUrl)}" alt="" loading="lazy" onerror="this.remove()">` : ''
-  }`;
 }
 
 function renderDayEntries() {
@@ -143,63 +148,112 @@ function formatDayTitle(key) {
   return `${y}/${m}/${d}(${wd})の献立`;
 }
 
+function closeDayFilterPanel() {
+  state.filterMode = null;
+  state.filterCategoryIds = new Set();
+  state.filterMinRating = null;
+  state.randomCandidate = null;
+  dayFilterPanel.classList.add('hidden');
+  daySearchResults.classList.add('hidden');
+  dayRandomBox.classList.add('hidden');
+  dayFilterEmpty.classList.add('hidden');
+}
+
 function openDay(key) {
   state.activeDayKey = key;
   dayTitle.textContent = formatDayTitle(key);
   renderDayEntries();
-  dayRecipeSearch.value = '';
-  dayRecipeResults.innerHTML = '';
+  closeDayFilterPanel();
   dayOverlay.classList.add('open');
 }
 
 function closeDay() {
   dayOverlay.classList.remove('open');
+  closeDayFilterPanel();
 }
 
-async function ensureAllRecipesLoaded() {
-  if (state.allRecipes.length > 0) return;
+async function ensureCategoriesLoaded() {
+  if (state.categories.length > 0) return;
   try {
-    state.allRecipes = await api.listRecipes({});
+    state.categories = await api.listCategories();
   } catch (err) {
     console.error(err);
   }
 }
 
-function renderRecipeResults(query) {
-  const q = query.trim().toLowerCase();
-  if (!q) {
-    dayRecipeResults.innerHTML = '';
-    return;
-  }
-  const matches = state.allRecipes
-    .filter((r) => (r.title || r.url || '').toLowerCase().includes(q))
-    .slice(0, 8);
-  dayRecipeResults.innerHTML = matches.length
-    ? matches.map((r) => `
-        <button type="button" class="day-recipe-result" data-id="${escHtml(r.id)}">
-          <span class="title">${escHtml(r.title || r.url)}</span>
-        </button>`).join('')
-    : '<p class="cal-empty-note">見つかりませんでした</p>';
+// カテゴリ・評価の条件が変わるたびに、検索モードなら一覧を、ランダムモードなら候補を引き直す。
+function applyDayFilterChange() {
+  if (state.filterMode === 'search') refreshDaySearchResults();
+  else if (state.filterMode === 'random') drawDayRandomCandidate();
 }
 
-async function addRecipeToDay(recipeId) {
+async function openDayFilterPanel(mode) {
+  await ensureCategoriesLoaded();
+  state.filterMode = mode;
+  state.randomCandidate = null;
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds);
+  ui.renderRatingRow('day-filter-rating-row', state.filterMinRating);
+  dayFilterPanel.classList.remove('hidden');
+  dayFilterEmpty.classList.add('hidden');
+  if (mode === 'search') {
+    dayRandomBox.classList.add('hidden');
+    daySearchResults.classList.remove('hidden');
+    await refreshDaySearchResults();
+  } else {
+    daySearchResults.classList.add('hidden');
+    dayRandomBox.classList.remove('hidden');
+    await drawDayRandomCandidate();
+  }
+}
+
+async function refreshDaySearchResults() {
   try {
-    const added = await api.addMealPlanEntry(state.activeDayKey, recipeId);
+    const recipes = await api.listRecipes({
+      categoryIds: [...state.filterCategoryIds],
+      minRating: state.filterMinRating,
+    });
+    state.lastSearchResults = recipes;
+    dayFilterEmpty.classList.toggle('hidden', recipes.length > 0);
+    daySearchResults.innerHTML = recipes.map((r) => `
+      <button type="button" class="day-recipe-result" data-id="${escHtml(r.id)}">
+        <span class="title">${escHtml(r.title || r.url)}</span>
+      </button>`).join('');
+  } catch (err) {
+    console.error(err);
+    toast('検索に失敗しました');
+  }
+}
+
+async function drawDayRandomCandidate() {
+  dayRandomContent.innerHTML = '<div class="loading-state"><span class="spin-emoji">🍳</span></div>';
+  try {
+    const recipe = await api.getRandomRecipe([...state.filterCategoryIds], state.filterMinRating);
+    state.randomCandidate = recipe;
+    dayFilterEmpty.classList.toggle('hidden', !!recipe);
+    dayRandomContent.innerHTML = recipe
+      ? `<div class="reveal-card"><div class="thumb">${thumbHtml(recipe.image_url)}</div><div class="body"><p class="title">${escHtml(recipe.title || recipe.url)}</p></div></div>`
+      : '';
+  } catch (err) {
+    console.error(err);
+    dayRandomContent.innerHTML = '';
+    toast('提案の取得に失敗しました');
+  }
+}
+
+async function addRecipeToDay(recipe) {
+  try {
+    const added = await api.addMealPlanEntry(state.activeDayKey, recipe.id);
     if (!added) {
       toast('この日にはすでに追加済みです');
       return;
     }
-    const recipe = state.allRecipes.find((r) => r.id === recipeId);
     const list = state.entriesByDate.get(state.activeDayKey) || [];
-    list.push({
-      id: added.id, recipe_id: recipeId,
-      title: recipe?.title || recipe?.url || '', image_url: recipe?.image_url, url: recipe?.url,
-    });
+    list.push({ id: added.id, recipe_id: recipe.id, title: recipe.title || recipe.url, image_url: recipe.image_url, url: recipe.url });
     state.entriesByDate.set(state.activeDayKey, list);
     renderDayEntries();
     renderGrid();
-    dayRecipeSearch.value = '';
-    dayRecipeResults.innerHTML = '';
+    closeDayFilterPanel();
+    toast(`「${recipe.title || recipe.url}」を追加しました`);
   } catch (err) {
     console.error(err);
     toast('追加に失敗しました');
@@ -219,59 +273,19 @@ async function removeRecipeFromDay(entryId) {
   }
 }
 
-// 表示中の範囲のうち、まだ何も登録されていない日にランダムでレシピを割り当てる。
-async function autoFillEmptyDays() {
-  const days = getGridDays();
-  const emptyKeys = days.map(dateKey).filter((k) => !(state.entriesByDate.get(k)?.length));
-  if (emptyKeys.length === 0) {
-    toast('空いている日はありません');
-    return;
-  }
-  autofillBtn.disabled = true;
-  autofillBtn.textContent = '埋めています…';
-  try {
-    let filled = 0;
-    for (const key of emptyKeys) {
-      const recipe = await api.getRandomRecipe([], null);
-      if (!recipe) break; // 保存済みレシピが1件もない
-      const added = await api.addMealPlanEntry(key, recipe.id);
-      if (added) {
-        const list = state.entriesByDate.get(key) || [];
-        list.push({ id: added.id, recipe_id: recipe.id, title: recipe.title || recipe.url, image_url: recipe.image_url, url: recipe.url });
-        state.entriesByDate.set(key, list);
-        filled++;
-      }
-    }
-    renderGrid();
-    toast(filled > 0 ? `${filled}日分をランダムで埋めました` : 'レシピが保存されていません');
-  } catch (err) {
-    console.error(err);
-    toast('自動割り当てに失敗しました');
-  } finally {
-    autofillBtn.disabled = false;
-    autofillBtn.textContent = '空いてる日をランダムで埋める';
-  }
-}
-
 calPrev.addEventListener('click', () => {
-  state.anchorDate = state.rangeMode === 'twoWeek' ? addDays(state.anchorDate, -14) : addMonths(state.anchorDate, -1);
+  state.anchorDate = addDays(state.anchorDate, -7);
   refresh();
 });
 calNext.addEventListener('click', () => {
-  state.anchorDate = state.rangeMode === 'twoWeek' ? addDays(state.anchorDate, 14) : addMonths(state.anchorDate, 1);
+  state.anchorDate = addDays(state.anchorDate, 7);
   refresh();
 });
-rangeToggleBtn.addEventListener('click', () => {
-  state.rangeMode = state.rangeMode === 'twoWeek' ? 'month' : 'twoWeek';
-  rangeToggleBtn.title = state.rangeMode === 'twoWeek' ? '1か月表示に切替' : '2週間表示に切替';
-  refresh();
-});
-autofillBtn.addEventListener('click', autoFillEmptyDays);
 
 calGrid.addEventListener('click', (e) => {
-  const cell = e.target.closest('.cal-cell');
-  if (!cell) return;
-  openDay(cell.dataset.date);
+  const row = e.target.closest('.cal-day-row');
+  if (!row) return;
+  openDay(row.dataset.date);
 });
 
 dayClose.addEventListener('click', closeDay);
@@ -285,19 +299,38 @@ dayEntries.addEventListener('click', (e) => {
   removeRecipeFromDay(btn.dataset.id);
 });
 
-let searchDebounce = null;
-dayRecipeSearch.addEventListener('input', () => {
-  clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(async () => {
-    await ensureAllRecipesLoaded();
-    renderRecipeResults(dayRecipeSearch.value);
-  }, 150);
+daySearchBtn.addEventListener('click', () => openDayFilterPanel('search'));
+dayRandomBtn.addEventListener('click', () => openDayFilterPanel('random'));
+
+dayFilterCats.addEventListener('click', (e) => {
+  const chip = e.target.closest('.cat-chip');
+  if (!chip) return;
+  const id = chip.dataset.id;
+  if (state.filterCategoryIds.has(id)) state.filterCategoryIds.delete(id);
+  else state.filterCategoryIds.add(id);
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds);
+  applyDayFilterChange();
 });
 
-dayRecipeResults.addEventListener('click', (e) => {
+dayFilterRatingRow.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action="set-min-rating"]');
+  if (!btn) return;
+  const value = Number(btn.dataset.value);
+  state.filterMinRating = state.filterMinRating === value ? null : value;
+  ui.renderRatingRow('day-filter-rating-row', state.filterMinRating);
+  applyDayFilterChange();
+});
+
+daySearchResults.addEventListener('click', (e) => {
   const btn = e.target.closest('.day-recipe-result');
   if (!btn) return;
-  addRecipeToDay(btn.dataset.id);
+  const recipe = state.lastSearchResults.find((r) => r.id === btn.dataset.id);
+  if (recipe) addRecipeToDay(recipe);
+});
+
+dayRandomAgainBtn.addEventListener('click', () => drawDayRandomCandidate());
+dayRandomAddBtn.addEventListener('click', () => {
+  if (state.randomCandidate) addRecipeToDay(state.randomCandidate);
 });
 
 function init() {

@@ -110,7 +110,6 @@ export function initUI(h) {
     if (!btn) return;
     const action = btn.dataset.action;
     if (action === 'open-original') handlers.onDetailOpenOriginal?.();
-    if (action === 'toggle-archive') handlers.onDetailToggleArchive?.();
     if (action === 'delete') handlers.onDetailDelete?.();
     if (action === 'edit') handlers.onDetailEdit?.();
     if (action === 'add-to-plan') handlers.onDetailAddToPlan?.();
@@ -208,6 +207,12 @@ export function renderFilterGroups(categories, activeIds) {
   document.getElementById('filter-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds);
 }
 
+// containerIdを指定できる汎用版。献立カレンダーの日別フィルタ(⑦)など、
+// フィルタ画面以外の場所でも同じグループ分けチップUIを再利用するために切り出したもの。
+export function renderCatGroups(containerId, categories, activeIds) {
+  document.getElementById(containerId).innerHTML = groupedCatGroupsHtml(categories, activeIds);
+}
+
 export function renderRatingRow(containerId, minRating) {
   document.getElementById(containerId).innerHTML = ratingRowHtml(minRating);
 }
@@ -236,11 +241,6 @@ export function showDetailLoading() {
 
 export function renderDetail(recipe, categoryNames) {
   const dateStr = recipe.created_at ? new Date(recipe.created_at).toLocaleDateString('ja-JP') : '';
-  const archiveButton = recipe.raw_html
-    ? '<button class="btn btn-secondary" data-action="toggle-archive" type="button">アーカイブを見る</button>'
-    : `<p style="font-size:12px; color:var(--text-3); text-align:center; margin:4px 0 0;">${
-        recipe.fetch_status === 'failed' ? 'アーカイブの取得に失敗しています(URLは保存済みです)' : 'アーカイブは保存されていません'
-      }</p>`;
   const tagsHtml = (categoryNames || []).map((n) => `<span class="cat-tag">${escHtml(n)}</span>`).join('');
   const sizeStr = recipe.raw_html ? formatBytes(new TextEncoder().encode(recipe.raw_html).length) : '';
 
@@ -256,9 +256,8 @@ export function renderDetail(recipe, categoryNames) {
     ${recipe.memo ? `<div class="detail-memo">${escHtml(recipe.memo)}</div>` : ''}
     <div class="detail-actions">
       <button class="btn btn-primary" data-action="open-original" type="button">元のレシピを見る</button>
-      <button class="btn btn-secondary" data-action="edit" type="button">タグ・評価を編集</button>
+      <button class="btn btn-secondary" data-action="edit" type="button">編集</button>
       <button class="btn btn-secondary" data-action="add-to-plan" type="button">献立に追加</button>
-      ${archiveButton}
       <button class="btn btn-danger" data-action="delete" type="button">削除</button>
     </div>
     <div id="archive-frame-wrap" class="archive-frame-wrap hidden"></div>
@@ -301,15 +300,12 @@ export function setEditSaving(isSaving) {
   btn.textContent = isSaving ? '保存中…' : '保存する';
 }
 
-export function toggleArchiveView(rawHtml) {
+// 「元のレシピを見る」の遷移先が生きていない場合(③)に、非同期の判定結果を受けて自動で表示する。
+// 手動での開閉トグルは持たず、リンク切れと判定された時だけ呼ばれる想定。
+export function showArchiveFallback(rawHtml) {
   const wrap = document.getElementById('archive-frame-wrap');
   if (!wrap) return;
-  if (!wrap.classList.contains('hidden')) {
-    wrap.classList.add('hidden');
-    wrap.innerHTML = '';
-    return;
-  }
-  wrap.innerHTML = '<div class="archive-note">保存時点のページを表示しています(レイアウトや画像が元サイトと異なる場合があります)</div>';
+  wrap.innerHTML = '<div class="archive-note">元のサイトにアクセスできないようです。保存時点のアーカイブを表示しています(レイアウトや画像が元サイトと異なる場合があります)</div>';
   const iframe = document.createElement('iframe');
   iframe.setAttribute('sandbox', '');
   iframe.srcdoc = rawHtml;
