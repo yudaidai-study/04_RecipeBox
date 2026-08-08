@@ -63,6 +63,53 @@ function extractTitleTag(html: string): string | null {
   return m ? decodeHtmlEntities(m[1]) : null;
 }
 
+// schema.orgのimageは string / string[] / ImageObject / ImageObject[] のいずれもあり得る。
+function firstImageFromSchemaImage(image: unknown): string | null {
+  if (typeof image === 'string') return image;
+  if (Array.isArray(image)) {
+    for (const item of image) {
+      const found = firstImageFromSchemaImage(item);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (image && typeof image === 'object' && typeof (image as { url?: unknown }).url === 'string') {
+    return (image as { url: string }).url;
+  }
+  return null;
+}
+
+// GoogleのレシピリッチリザルトはこのJSON-LD(schema.org Recipe)のimageを使う。
+// サイトのog:imageが全ページ共通のロゴ等になっているケースがあるため、取れる場合はこちらを優先する。
+function extractRecipeFromJsonLd(html: string): { image: string | null; title: string | null } {
+  const scriptRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = scriptRe.exec(html)) !== null) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(match[1].trim());
+    } catch {
+      continue;
+    }
+    const candidates = Array.isArray(parsed) ? parsed : [parsed];
+    for (const candidate of candidates) {
+      const nodes = candidate && typeof candidate === 'object' && Array.isArray((candidate as { '@graph'?: unknown })['@graph'])
+        ? (candidate as { '@graph': unknown[] })['@graph']
+        : [candidate];
+      for (const node of nodes) {
+        if (!node || typeof node !== 'object') continue;
+        const type = (node as { '@type'?: unknown })['@type'];
+        const isRecipe = type === 'Recipe' || (Array.isArray(type) && type.includes('Recipe'));
+        if (!isRecipe) continue;
+        const image = firstImageFromSchemaImage((node as { image?: unknown }).image);
+        const name = (node as { name?: unknown }).name;
+        return { image, title: typeof name === 'string' ? name : null };
+      }
+    }
+  }
+  return { image: null, title: null };
+}
+
 function resolveMaybeRelative(url: string | null, base: string): string | null {
   if (!url) return null;
   try {
@@ -158,8 +205,12 @@ async function fetchPageSafely(url: string): Promise<FetchResult> {
     const rawHtml = decodeHtml(bytes, contentType);
     const finalUrl = res.url || url;
 
-    const title = extractMeta(rawHtml, ['og:title']) ?? extractTitleTag(rawHtml);
-    const imageUrl = resolveMaybeRelative(extractMeta(rawHtml, ['og:image', 'twitter:image']), finalUrl);
+    const jsonLd = extractRecipeFromJsonLd(rawHtml);
+    const title = jsonLd.title ?? extractMeta(rawHtml, ['og:title']) ?? extractTitleTag(rawHtml);
+    const imageUrl = resolveMaybeRelative(
+      jsonLd.image ?? extractMeta(rawHtml, ['og:image', 'twitter:image']),
+      finalUrl,
+    );
     const excerpt = extractMeta(rawHtml, ['og:description', 'description']);
 
     const archived = stripScriptTags(injectBaseTag(rawHtml, finalUrl));
