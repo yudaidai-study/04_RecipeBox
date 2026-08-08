@@ -21,7 +21,7 @@
 
 ### 2. データベースを作成
 
-**SQL Editor** を開き、[`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) → [`supabase/migrations/0002_multi_tag_categories.sql`](supabase/migrations/0002_multi_tag_categories.sql) の順に貼り付けて実行する(0002はカテゴリを複数タグ選択方式にする変更。既に0001だけ実行済みの場合も0002を追加で実行すればよい)。
+**SQL Editor** を開き、[`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) → [`supabase/migrations/0002_multi_tag_categories.sql`](supabase/migrations/0002_multi_tag_categories.sql) → [`supabase/migrations/0003_add_recipe_rating.sql`](supabase/migrations/0003_add_recipe_rating.sql) の順に貼り付けて実行する(0002はカテゴリを複数タグ選択方式にする変更、0003は5段階評価の追加。未実行のものだけ追加で実行すればよい)。
 
 ### 3. Edge Functionをデプロイ
 

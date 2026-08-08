@@ -22,6 +22,20 @@ function catChipsHtml(categories, activeIds) {
   return all + rest;
 }
 
+// interactive=trueだと評価入力用のボタン(タップで☆1〜5を選択、同じ星を再タップで解除)、
+// falseだと表示専用のspan(カード等での既評価の表示用)。
+function starsHtml(rating, interactive) {
+  const r = rating || 0;
+  let html = '';
+  for (let n = 1; n <= 5; n++) {
+    const filled = n <= r;
+    html += interactive
+      ? `<button type="button" class="star-btn ${filled ? 'filled' : ''}" data-action="set-rating" data-value="${n}" aria-label="${n}つ星">★</button>`
+      : `<span class="star-ico ${filled ? 'filled' : ''}">★</span>`;
+  }
+  return html;
+}
+
 let handlers = {};
 
 export function initUI(h) {
@@ -54,6 +68,7 @@ export function initUI(h) {
     if (action === 'open-original') handlers.onDetailOpenOriginal?.();
     if (action === 'toggle-archive') handlers.onDetailToggleArchive?.();
     if (action === 'delete') handlers.onDetailDelete?.();
+    if (action === 'set-rating') handlers.onRatingSelect?.(Number(btn.dataset.value));
   });
 
   document.getElementById('random-overlay').addEventListener('click', (e) => {
@@ -98,6 +113,7 @@ export function renderRecipeGrid(recipes, categoriesById) {
         <div class="thumb">${thumbHtml(r.image_url)}</div>
         <div class="body">
           <p class="title">${escHtml(r.title || r.url)}</p>
+          ${r.rating ? `<div class="rating-stars small">${starsHtml(r.rating, false)}</div>` : ''}
           <div class="cat-tag-row">${tagsHtml}</div>${r.fetch_status === 'failed' ? '<span class="fetch-failed-badge">アーカイブ未取得</span>' : ''}
         </div>
       </button>`;
@@ -132,6 +148,7 @@ export function renderDetail(recipe, categoryNames) {
   document.getElementById('detail-content').innerHTML = `
     <div class="detail-thumb">${thumbHtml(recipe.image_url)}</div>
     <h2 class="detail-title">${escHtml(recipe.title || recipe.url)}</h2>
+    <div class="rating-stars interactive">${starsHtml(recipe.rating, true)}</div>
     <div class="detail-meta">
       ${tagsHtml}
       ${dateStr ? `<span style="font-size:12px; color:var(--text-2);">${escHtml(dateStr)} 保存</span>` : ''}

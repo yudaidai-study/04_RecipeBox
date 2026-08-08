@@ -7,6 +7,7 @@ const state = {
   categoriesById: new Map(),
   activeCategoryIds: new Set(),
   detailRecipe: null,
+  detailCategoryNames: [],
   randomCategoryIds: new Set(),
   randomLastId: null,
   randomRecipe: null,
@@ -63,11 +64,32 @@ async function openDetail(id) {
     const names = (recipe.recipe_categories || [])
       .map((rc) => state.categoriesById.get(rc.category_id)?.name)
       .filter(Boolean);
+    state.detailCategoryNames = names;
     ui.renderDetail(recipe, names);
   } catch (err) {
     console.error(err);
     ui.closeDetail();
     ui.toast('レシピの読み込みに失敗しました');
+  }
+}
+
+async function handleRatingSelect(value) {
+  const recipe = state.detailRecipe;
+  if (!recipe) return;
+  const next = recipe.rating === value ? null : value; // 同じ星を再タップで評価解除
+  const prev = recipe.rating;
+
+  recipe.rating = next;
+  ui.renderDetail(recipe, state.detailCategoryNames);
+
+  try {
+    await api.updateRating(recipe.id, next);
+    loadRecipes(); // 一覧側の星表示にも反映
+  } catch (err) {
+    console.error(err);
+    recipe.rating = prev;
+    ui.renderDetail(recipe, state.detailCategoryNames);
+    ui.toast('評価の保存に失敗しました');
   }
 }
 
@@ -141,6 +163,9 @@ function init() {
     },
     onDetailDelete() {
       handleDetailDelete();
+    },
+    onRatingSelect(value) {
+      handleRatingSelect(value);
     },
     onRandomCatSelect(categoryId) {
       toggleCategoryId(state.randomCategoryIds, categoryId);

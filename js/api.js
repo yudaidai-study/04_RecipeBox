@@ -75,7 +75,7 @@ export async function listRecipes({ categoryIds } = {}) {
 
   let query = supabase
     .from('recipes')
-    .select(`id, url, title, image_url, fetch_status, created_at, ${relation}`)
+    .select(`id, url, title, image_url, rating, fetch_status, created_at, ${relation}`)
     .order('created_at', { ascending: false });
 
   if (hasFilter) query = query.in('recipe_categories.category_id', categoryIds);
@@ -89,7 +89,7 @@ export async function getRecipeDetail(id) {
   assertReady();
   const { data, error } = await supabase
     .from('recipes')
-    .select('id, url, title, image_url, excerpt, memo, raw_html, fetch_status, created_at, recipe_categories(category_id)')
+    .select('id, url, title, image_url, excerpt, memo, raw_html, rating, fetch_status, created_at, recipe_categories(category_id)')
     .eq('id', id)
     .single();
   if (error) throw error;
@@ -132,6 +132,12 @@ export async function saveRecipe({ url, categoryIds, memo }) {
     throw new Error(data?.message || '保存に失敗しました。');
   }
   return data.recipe;
+}
+
+export async function updateRating(id, rating) {
+  assertReady();
+  const { error } = await supabase.from('recipes').update({ rating }).eq('id', id);
+  if (error) throw error;
 }
 
 export async function deleteRecipe(id) {
