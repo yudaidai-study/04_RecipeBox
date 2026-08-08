@@ -300,7 +300,15 @@ main {
   overflow: hidden;
 }
 
-.recipe-card .cat-tag {
+.cat-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.cat-tag-row:empty { display: none; margin: 0; }
+
+.cat-tag {
   display: inline-block;
   font-size: 11px;
   font-weight: 700;
@@ -625,6 +633,22 @@ main {
   margin-bottom: 18px;
   font-weight: 600;
 }
+.tag-group + .tag-group {
+  margin-top: 16px;
+}
+.tag-group-label {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tag-row:empty { display: none; }
+
 .new-cat-row {
   display: flex;
   gap: 8px;

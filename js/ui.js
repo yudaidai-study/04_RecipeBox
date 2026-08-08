@@ -13,10 +13,11 @@ function thumbHtml(imageUrl) {
   }`;
 }
 
-function catChipsHtml(categories, activeId) {
-  const all = `<button class="cat-chip ${activeId ? '' : 'active'}" data-id="">すべて</button>`;
+// activeIds: 選択中カテゴリIDのSet(複数選択可)。空集合のときは「すべて」がアクティブ。
+function catChipsHtml(categories, activeIds) {
+  const all = `<button class="cat-chip ${activeIds.size === 0 ? 'active' : ''}" data-id="">すべて</button>`;
   const rest = categories
-    .map((c) => `<button class="cat-chip ${activeId === c.id ? 'active' : ''}" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
+    .map((c) => `<button class="cat-chip ${activeIds.has(c.id) ? 'active' : ''}" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
     .join('');
   return all + rest;
 }
@@ -88,13 +89,16 @@ export function setErrorMessage(msg) {
 
 export function renderRecipeGrid(recipes, categoriesById) {
   document.getElementById('recipe-grid').innerHTML = recipes.map((r) => {
-    const cat = r.category_id ? categoriesById.get(r.category_id) : null;
+    const names = (r.recipe_categories || [])
+      .map((rc) => categoriesById.get(rc.category_id)?.name)
+      .filter(Boolean);
+    const tagsHtml = names.map((n) => `<span class="cat-tag">${escHtml(n)}</span>`).join('');
     return `
       <button class="recipe-card" data-id="${escHtml(r.id)}" type="button">
         <div class="thumb">${thumbHtml(r.image_url)}</div>
         <div class="body">
           <p class="title">${escHtml(r.title || r.url)}</p>
-          ${cat ? `<span class="cat-tag">${escHtml(cat.name)}</span>` : ''}${r.fetch_status === 'failed' ? '<span class="fetch-failed-badge">アーカイブ未取得</span>' : ''}
+          <div class="cat-tag-row">${tagsHtml}</div>${r.fetch_status === 'failed' ? '<span class="fetch-failed-badge">アーカイブ未取得</span>' : ''}
         </div>
       </button>`;
   }).join('');
@@ -116,19 +120,20 @@ export function showDetailLoading() {
   document.getElementById('detail-content').innerHTML = '<div class="loading-state"><span class="spin-emoji">🍳</span></div>';
 }
 
-export function renderDetail(recipe, categoryName) {
+export function renderDetail(recipe, categoryNames) {
   const dateStr = recipe.created_at ? new Date(recipe.created_at).toLocaleDateString('ja-JP') : '';
   const archiveButton = recipe.raw_html
     ? '<button class="btn btn-secondary" data-action="toggle-archive" type="button">アーカイブを見る</button>'
     : `<p style="font-size:12px; color:var(--text-3); text-align:center; margin:4px 0 0;">${
         recipe.fetch_status === 'failed' ? 'アーカイブの取得に失敗しています(URLは保存済みです)' : 'アーカイブは保存されていません'
       }</p>`;
+  const tagsHtml = (categoryNames || []).map((n) => `<span class="cat-tag">${escHtml(n)}</span>`).join('');
 
   document.getElementById('detail-content').innerHTML = `
     <div class="detail-thumb">${thumbHtml(recipe.image_url)}</div>
     <h2 class="detail-title">${escHtml(recipe.title || recipe.url)}</h2>
     <div class="detail-meta">
-      ${categoryName ? `<span class="cat-tag">${escHtml(categoryName)}</span>` : ''}
+      ${tagsHtml}
       ${dateStr ? `<span style="font-size:12px; color:var(--text-2);">${escHtml(dateStr)} 保存</span>` : ''}
     </div>
     <p class="detail-url">${escHtml(recipe.url)}</p>

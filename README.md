@@ -21,11 +21,13 @@
 
 ### 2. データベースを作成
 
-**SQL Editor** を開き、[`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) の内容を貼り付けて実行する。
+**SQL Editor** を開き、[`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) → [`supabase/migrations/0002_multi_tag_categories.sql`](supabase/migrations/0002_multi_tag_categories.sql) の順に貼り付けて実行する(0002はカテゴリを複数タグ選択方式にする変更。既に0001だけ実行済みの場合も0002を追加で実行すればよい)。
 
 ### 3. Edge Functionをデプロイ
 
 **Edge Functions → Deploy a new function → Via Editor** で関数名 `fetch-recipe` を指定し、[`supabase/functions/fetch-recipe/index.ts`](supabase/functions/fetch-recipe/index.ts) の内容を貼り付けてデプロイする。CLIやNode.jsのインストールは不要。
+
+既にデプロイ済みの場合も、0002適用後は必ず最新の`index.ts`で再デプロイすること(カテゴリの受け渡し方法が`categoryId`単体から`categoryIds`配列に変わっているため)。
 
 ### 4. アプリ側にSupabaseの接続情報を設定
 

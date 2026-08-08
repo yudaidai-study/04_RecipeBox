@@ -193,7 +193,10 @@ Deno.serve(async (req: Request) => {
       return jsonError('invalid_request', 'リクエストの形式が正しくありません', 400);
     }
 
-    const { url, categoryId, memo } = body as { url: string; categoryId?: string | null; memo?: string | null };
+    const { url, categoryIds, memo } = body as { url: string; categoryIds?: string[]; memo?: string | null };
+    const catIds = Array.isArray(categoryIds)
+      ? [...new Set(categoryIds.filter((id): id is string => typeof id === 'string' && id.length > 0))]
+      : [];
 
     let parsed: URL;
     try {
@@ -217,7 +220,6 @@ Deno.serve(async (req: Request) => {
       .from('recipes')
       .insert({
         url: parsed.href,
-        category_id: categoryId || null,
         memo: memo || null,
         title: page.title || parsed.hostname,
         image_url: page.imageUrl || null,
@@ -230,6 +232,14 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (error) return jsonError('db_insert_failed', error.message, 500);
+
+    if (catIds.length > 0) {
+      const { error: linkError } = await supabase
+        .from('recipe_categories')
+        .insert(catIds.map((category_id) => ({ recipe_id: data.id, category_id })));
+      // レシピ本体の保存は既に成功しているため、タグ付けの失敗はログのみで致命扱いにしない
+      if (linkError) console.error('recipe_categories insert failed', linkError);
+    }
 
     return jsonRes({ ok: true, recipe: data });
   } catch (e) {

@@ -6,14 +6,39 @@ function assertReady() {
   }
 }
 
+// group_key(固定3グループ)の表示順。自由入力タグ(group_key=null)は常に末尾。
+const GROUP_ORDER = { genre: 1, role: 2, main_ingredient: 3 };
+
+function sortCategories(categories) {
+  return [...categories].sort((a, b) => {
+    const ga = a.group_key ? (GROUP_ORDER[a.group_key] ?? 90) : 100;
+    const gb = b.group_key ? (GROUP_ORDER[b.group_key] ?? 90) : 100;
+    if (ga !== gb) return ga - gb;
+    if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+    return a.name.localeCompare(b.name, 'ja');
+  });
+}
+
+// 多対多の埋め込みフィルタ(recipe_categories!inner)で複数タグマッチさせた際、
+// 同じレシピが複数回返ってくるケースへの保険としてid単位で重複除去する。
+function dedupeById(rows) {
+  const seen = new Set();
+  const out = [];
+  for (const r of rows || []) {
+    if (seen.has(r.id)) continue;
+    seen.add(r.id);
+    out.push(r);
+  }
+  return out;
+}
+
 export async function listCategories() {
   assertReady();
   const { data, error } = await supabase
     .from('categories')
-    .select('id, name')
-    .order('name', { ascending: true });
+    .select('id, name, group_key, sort_order');
   if (error) throw error;
-  return data;
+  return sortCategories(data);
 }
 
 export async function createCategory(name) {
@@ -23,8 +48,8 @@ export async function createCategory(name) {
 
   const { data, error } = await supabase
     .from('categories')
-    .insert({ name: trimmed })
-    .select('id, name')
+    .insert({ name: trimmed }) // group_keyは指定しない = 自由入力タグ扱い
+    .select('id, name, group_key, sort_order')
     .single();
 
   if (error) {
@@ -32,7 +57,7 @@ export async function createCategory(name) {
       // 同名カテゴリが既に存在する場合はそれを返す(重複作成エラーにしない)
       const { data: existing, error: fetchError } = await supabase
         .from('categories')
-        .select('id, name')
+        .select('id, name, group_key, sort_order')
         .eq('name', trimmed)
         .single();
       if (fetchError) throw fetchError;
@@ -43,47 +68,54 @@ export async function createCategory(name) {
   return data;
 }
 
-export async function listRecipes({ categoryId } = {}) {
+export async function listRecipes({ categoryIds } = {}) {
   assertReady();
+  const hasFilter = Array.isArray(categoryIds) && categoryIds.length > 0;
+  const relation = hasFilter ? 'recipe_categories!inner(category_id)' : 'recipe_categories(category_id)';
+
   let query = supabase
     .from('recipes')
-    .select('id, url, title, image_url, category_id, fetch_status, created_at')
+    .select(`id, url, title, image_url, fetch_status, created_at, ${relation}`)
     .order('created_at', { ascending: false });
 
-  if (categoryId) query = query.eq('category_id', categoryId);
+  if (hasFilter) query = query.in('recipe_categories.category_id', categoryIds);
 
   const { data, error } = await query;
   if (error) throw error;
-  return data;
+  return dedupeById(data);
 }
 
 export async function getRecipeDetail(id) {
   assertReady();
   const { data, error } = await supabase
     .from('recipes')
-    .select('id, url, title, image_url, excerpt, memo, category_id, raw_html, fetch_status, created_at')
+    .select('id, url, title, image_url, excerpt, memo, raw_html, fetch_status, created_at, recipe_categories(category_id)')
     .eq('id', id)
     .single();
   if (error) throw error;
   return data;
 }
 
-export async function getRandomRecipe(categoryId) {
+export async function getRandomRecipe(categoryIds) {
   assertReady();
-  let query = supabase.from('recipes').select('id, title, image_url, url, category_id');
-  if (categoryId) query = query.eq('category_id', categoryId);
+  const hasFilter = Array.isArray(categoryIds) && categoryIds.length > 0;
+  const relation = hasFilter ? 'recipe_categories!inner(category_id)' : 'recipe_categories(category_id)';
+
+  let query = supabase.from('recipes').select(`id, title, image_url, url, ${relation}`);
+  if (hasFilter) query = query.in('recipe_categories.category_id', categoryIds);
 
   const { data, error } = await query;
   if (error) throw error;
-  if (!data || data.length === 0) return null;
+  const list = dedupeById(data);
+  if (list.length === 0) return null;
 
-  return data[Math.floor(Math.random() * data.length)];
+  return list[Math.floor(Math.random() * list.length)];
 }
 
-export async function saveRecipe({ url, categoryId, memo }) {
+export async function saveRecipe({ url, categoryIds, memo }) {
   assertReady();
   const { data, error } = await supabase.functions.invoke('fetch-recipe', {
-    body: { url, categoryId: categoryId || null, memo: memo || null },
+    body: { url, categoryIds: categoryIds || [], memo: memo || null },
   });
 
   if (error) {

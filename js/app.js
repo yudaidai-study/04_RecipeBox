@@ -5,12 +5,22 @@ import * as ui from './ui.js';
 const state = {
   categories: [],
   categoriesById: new Map(),
-  activeCategoryId: null,
+  activeCategoryIds: new Set(),
   detailRecipe: null,
-  randomCategoryId: null,
+  randomCategoryIds: new Set(),
   randomLastId: null,
   randomRecipe: null,
 };
+
+// 「すべて」チップ(id === '')の選択でクリア、それ以外は集合に対するトグル選択。
+function toggleCategoryId(set, id) {
+  if (!id) {
+    set.clear();
+    return;
+  }
+  if (set.has(id)) set.delete(id);
+  else set.add(id);
+}
 
 async function loadCategories() {
   state.categories = await api.listCategories();
@@ -20,7 +30,7 @@ async function loadCategories() {
 async function loadRecipes() {
   ui.showState('loading');
   try {
-    const recipes = await api.listRecipes({ categoryId: state.activeCategoryId });
+    const recipes = await api.listRecipes({ categoryIds: [...state.activeCategoryIds] });
     if (recipes.length === 0) {
       ui.showState('empty');
     } else {
@@ -37,7 +47,7 @@ async function loadRecipes() {
 async function refreshAll() {
   try {
     await loadCategories();
-    ui.renderCategoryTabs(state.categories, state.activeCategoryId);
+    ui.renderCategoryTabs(state.categories, state.activeCategoryIds);
   } catch (err) {
     console.error(err);
   }
@@ -50,8 +60,10 @@ async function openDetail(id) {
   try {
     const recipe = await api.getRecipeDetail(id);
     state.detailRecipe = recipe;
-    const cat = recipe.category_id ? state.categoriesById.get(recipe.category_id) : null;
-    ui.renderDetail(recipe, cat?.name);
+    const names = (recipe.recipe_categories || [])
+      .map((rc) => state.categoriesById.get(rc.category_id)?.name)
+      .filter(Boolean);
+    ui.renderDetail(recipe, names);
   } catch (err) {
     console.error(err);
     ui.closeDetail();
@@ -77,9 +89,10 @@ async function handleDetailDelete() {
 async function drawRandomRecipe({ avoidLastId }) {
   ui.showRandomStep('loading');
   try {
-    let recipe = await api.getRandomRecipe(state.randomCategoryId);
+    const categoryIds = [...state.randomCategoryIds];
+    let recipe = await api.getRandomRecipe(categoryIds);
     if (avoidLastId && recipe && recipe.id === state.randomLastId) {
-      const retry = await api.getRandomRecipe(state.randomCategoryId);
+      const retry = await api.getRandomRecipe(categoryIds);
       if (retry) recipe = retry;
     }
     if (!recipe) {
@@ -100,8 +113,8 @@ async function drawRandomRecipe({ avoidLastId }) {
 function init() {
   ui.initUI({
     onSelectCategory(categoryId) {
-      state.activeCategoryId = categoryId;
-      ui.renderCategoryTabs(state.categories, state.activeCategoryId);
+      toggleCategoryId(state.activeCategoryIds, categoryId);
+      ui.renderCategoryTabs(state.categories, state.activeCategoryIds);
       loadRecipes();
     },
     onCardClick(id) {
@@ -111,9 +124,9 @@ function init() {
       loadRecipes();
     },
     onTodayCta() {
-      state.randomCategoryId = state.activeCategoryId;
+      state.randomCategoryIds = new Set(state.activeCategoryIds);
       state.randomLastId = null;
-      ui.renderRandomCats(state.categories, state.randomCategoryId);
+      ui.renderRandomCats(state.categories, state.randomCategoryIds);
       ui.showRandomStep('pick');
       ui.openRandomOverlay();
     },
@@ -130,9 +143,9 @@ function init() {
       handleDetailDelete();
     },
     onRandomCatSelect(categoryId) {
-      state.randomCategoryId = categoryId;
+      toggleCategoryId(state.randomCategoryIds, categoryId);
       state.randomLastId = null;
-      ui.renderRandomCats(state.categories, state.randomCategoryId);
+      ui.renderRandomCats(state.categories, state.randomCategoryIds);
     },
     onRandomConfirm() {
       drawRandomRecipe({ avoidLastId: false });

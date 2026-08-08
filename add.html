@@ -38,16 +38,31 @@
         </div>
 
         <div class="field">
-          <label for="category-select">カテゴリ</label>
-          <select id="category-select">
-            <option value="">未分類</option>
-          </select>
-          <div id="new-cat-toggle-wrap">
-            <button id="new-cat-toggle" class="btn-text" type="button" style="padding:8px 0;">＋ 新しいカテゴリを追加</button>
-          </div>
-          <div id="new-cat-row" class="new-cat-row hidden">
-            <input id="new-cat-input" type="text" placeholder="新しいカテゴリ名" maxlength="30">
-            <button id="new-cat-add" type="button">追加</button>
+          <label>カテゴリ(複数選択できます)</label>
+          <div id="tag-picker">
+            <div class="tag-group">
+              <p class="tag-group-label">ジャンル</p>
+              <div class="tag-row" data-group="genre"></div>
+            </div>
+            <div class="tag-group">
+              <p class="tag-group-label">料理の役割</p>
+              <div class="tag-row" data-group="role"></div>
+            </div>
+            <div class="tag-group">
+              <p class="tag-group-label">主な食材</p>
+              <div class="tag-row" data-group="main_ingredient"></div>
+            </div>
+            <div class="tag-group">
+              <p class="tag-group-label">自由入力タグ</p>
+              <div class="tag-row" id="free-tag-row"></div>
+              <div id="new-cat-toggle-wrap">
+                <button id="new-cat-toggle" class="btn-text" type="button" style="padding:8px 0;">＋ 新しいタグを追加</button>
+              </div>
+              <div id="new-cat-row" class="new-cat-row hidden">
+                <input id="new-cat-input" type="text" placeholder="新しいタグ名" maxlength="30">
+                <button id="new-cat-add" type="button">追加</button>
+              </div>
+            </div>
           </div>
         </div>
 
