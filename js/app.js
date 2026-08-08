@@ -6,20 +6,23 @@ import { APP_VERSION } from './config.js';
 const state = {
   categories: [],
   categoriesById: new Map(),
+  // 一覧に適用中(確定済み)のフィルタ
   activeCategoryIds: new Set(),
+  activeMinRating: null,
+  // フィルタポップアップを開いている間だけの下書き(「絞り込む」を押すまでactiveへ反映しない)
+  filterDraftCategoryIds: new Set(),
+  filterDraftMinRating: null,
   detailRecipe: null,
   detailCategoryNames: [],
   randomCategoryIds: new Set(),
+  randomMinRating: null,
   randomLastId: null,
   randomRecipe: null,
 };
 
-// 「すべて」チップ(id === '')の選択でクリア、それ以外は集合に対するトグル選択。
+// カテゴリIDの選択集合に対するトグル。
 function toggleCategoryId(set, id) {
-  if (!id) {
-    set.clear();
-    return;
-  }
+  if (!id) return;
   if (set.has(id)) set.delete(id);
   else set.add(id);
 }
@@ -32,7 +35,10 @@ async function loadCategories() {
 async function loadRecipes() {
   ui.showState('loading');
   try {
-    const recipes = await api.listRecipes({ categoryIds: [...state.activeCategoryIds] });
+    const recipes = await api.listRecipes({
+      categoryIds: [...state.activeCategoryIds],
+      minRating: state.activeMinRating,
+    });
     if (recipes.length === 0) {
       ui.showState('empty');
     } else {
@@ -49,11 +55,14 @@ async function loadRecipes() {
 async function refreshAll() {
   try {
     await loadCategories();
-    ui.renderCategoryTabs(state.categories, state.activeCategoryIds);
   } catch (err) {
     console.error(err);
   }
   await loadRecipes();
+}
+
+function filterActiveCount() {
+  return state.activeCategoryIds.size + (state.activeMinRating ? 1 : 0);
 }
 
 async function openDetail(id) {
@@ -113,9 +122,10 @@ async function drawRandomRecipe({ avoidLastId }) {
   ui.showRandomStep('loading');
   try {
     const categoryIds = [...state.randomCategoryIds];
-    let recipe = await api.getRandomRecipe(categoryIds);
+    const minRating = state.randomMinRating;
+    let recipe = await api.getRandomRecipe(categoryIds, minRating);
     if (avoidLastId && recipe && recipe.id === state.randomLastId) {
-      const retry = await api.getRandomRecipe(categoryIds);
+      const retry = await api.getRandomRecipe(categoryIds, minRating);
       if (retry) recipe = retry;
     }
     if (!recipe) {
@@ -138,21 +148,49 @@ function init() {
   if (versionEl) versionEl.textContent = APP_VERSION;
 
   ui.initUI({
-    onSelectCategory(categoryId) {
-      toggleCategoryId(state.activeCategoryIds, categoryId);
-      ui.renderCategoryTabs(state.categories, state.activeCategoryIds);
-      loadRecipes();
-    },
     onCardClick(id) {
       openDetail(id);
     },
     onRetry() {
       loadRecipes();
     },
+    onFilterBtn() {
+      state.filterDraftCategoryIds = new Set(state.activeCategoryIds);
+      state.filterDraftMinRating = state.activeMinRating;
+      ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
+      ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
+      ui.openFilterOverlay();
+    },
+    onFilterClose() {
+      ui.closeFilterOverlay();
+    },
+    onFilterChipToggle(categoryId) {
+      toggleCategoryId(state.filterDraftCategoryIds, categoryId);
+      ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
+    },
+    onFilterRatingSelect(value) {
+      state.filterDraftMinRating = state.filterDraftMinRating === value ? null : value;
+      ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
+    },
+    onFilterClear() {
+      state.filterDraftCategoryIds.clear();
+      state.filterDraftMinRating = null;
+      ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
+      ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
+    },
+    onFilterApply() {
+      state.activeCategoryIds = new Set(state.filterDraftCategoryIds);
+      state.activeMinRating = state.filterDraftMinRating;
+      ui.updateFilterBadge(filterActiveCount());
+      ui.closeFilterOverlay();
+      loadRecipes();
+    },
     onTodayCta() {
       state.randomCategoryIds = new Set(state.activeCategoryIds);
+      state.randomMinRating = state.activeMinRating;
       state.randomLastId = null;
       ui.renderRandomCats(state.categories, state.randomCategoryIds);
+      ui.renderRatingRow('random-rating-row', state.randomMinRating);
       ui.showRandomStep('pick');
       ui.openRandomOverlay();
     },
@@ -175,6 +213,18 @@ function init() {
       toggleCategoryId(state.randomCategoryIds, categoryId);
       state.randomLastId = null;
       ui.renderRandomCats(state.categories, state.randomCategoryIds);
+    },
+    onRandomRatingSelect(value) {
+      state.randomMinRating = state.randomMinRating === value ? null : value;
+      state.randomLastId = null;
+      ui.renderRatingRow('random-rating-row', state.randomMinRating);
+    },
+    onRandomClear() {
+      state.randomCategoryIds.clear();
+      state.randomMinRating = null;
+      state.randomLastId = null;
+      ui.renderRandomCats(state.categories, state.randomCategoryIds);
+      ui.renderRatingRow('random-rating-row', state.randomMinRating);
     },
     onRandomConfirm() {
       drawRandomRecipe({ avoidLastId: false });

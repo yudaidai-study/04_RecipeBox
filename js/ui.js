@@ -13,13 +13,45 @@ function thumbHtml(imageUrl) {
   }`;
 }
 
-// activeIds: 選択中カテゴリIDのSet(複数選択可)。空集合のときは「すべて」がアクティブ。
-function catChipsHtml(categories, activeIds) {
-  const all = `<button class="cat-chip ${activeIds.size === 0 ? 'active' : ''}" data-id="">すべて</button>`;
-  const rest = categories
-    .map((c) => `<button class="cat-chip ${activeIds.has(c.id) ? 'active' : ''}" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
-    .join('');
-  return all + rest;
+// カテゴリをグループ(ジャンル/料理区分/メイン/自由入力)ごとに整列したチップ群のHTML。
+// レシピ保存画面のタグピッカーと同じ見た目にするため、フィルタ・今日は何作るの両方で共用する。
+const CAT_GROUP_DEFS = [
+  { key: 'genre', label: 'ジャンル' },
+  { key: 'role', label: '料理区分' },
+  { key: 'main_ingredient', label: 'メイン' },
+  { key: 'free', label: '自由入力' },
+];
+
+function groupedCatGroupsHtml(categories, activeIds) {
+  const buckets = { genre: [], role: [], main_ingredient: [], free: [] };
+  for (const c of categories) {
+    const key = c.group_key && buckets[c.group_key] ? c.group_key : 'free';
+    buckets[key].push(c);
+  }
+  return CAT_GROUP_DEFS.map(({ key, label }) => {
+    const chips = buckets[key]
+      .map((c) => `<button type="button" class="cat-chip ${activeIds.has(c.id) ? 'active' : ''}" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
+      .join('');
+    if (!chips) return '';
+    return `<div class="tag-group"><p class="tag-group-label">${label}</p><div class="tag-row">${chips}</div></div>`;
+  }).join('');
+}
+
+// 評価フィルタ用の星ボタン行。minRating以下の星をfilled表示し、タップで「n以上」の閾値を設定する。
+function ratingRowHtml(minRating) {
+  let html = '';
+  for (let n = 1; n <= 5; n++) {
+    const filled = n <= (minRating || 0);
+    html += `<button type="button" class="star-btn ${filled ? 'filled' : ''}" data-action="set-min-rating" data-value="${n}" aria-label="${n}つ星以上で絞り込む">★</button>`;
+  }
+  return html;
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
 // interactive=trueだと評価入力用のボタン(タップで☆1〜5を選択、同じ星を再タップで解除)、
@@ -41,11 +73,23 @@ let handlers = {};
 export function initUI(h) {
   handlers = h;
 
-  document.getElementById('category-tabs').addEventListener('click', (e) => {
-    const btn = e.target.closest('.cat-chip');
-    if (!btn) return;
-    handlers.onSelectCategory?.(btn.dataset.id || null);
+  document.getElementById('filter-btn').addEventListener('click', () => handlers.onFilterBtn?.());
+  document.getElementById('filter-close').addEventListener('click', () => handlers.onFilterClose?.());
+  document.getElementById('filter-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'filter-overlay') handlers.onFilterClose?.();
   });
+  document.getElementById('filter-cat-groups').addEventListener('click', (e) => {
+    const chip = e.target.closest('.cat-chip');
+    if (!chip) return;
+    handlers.onFilterChipToggle?.(chip.dataset.id);
+  });
+  document.getElementById('filter-rating-row').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="set-min-rating"]');
+    if (!btn) return;
+    handlers.onFilterRatingSelect?.(Number(btn.dataset.value));
+  });
+  document.getElementById('filter-clear').addEventListener('click', () => handlers.onFilterClear?.());
+  document.getElementById('filter-apply').addEventListener('click', () => handlers.onFilterApply?.());
 
   document.getElementById('recipe-grid').addEventListener('click', (e) => {
     const card = e.target.closest('.recipe-card');
@@ -80,16 +124,18 @@ export function initUI(h) {
     if (!chip) return;
     handlers.onRandomCatSelect?.(chip.dataset.id || null);
   });
+  document.getElementById('random-rating-row').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="set-min-rating"]');
+    if (!btn) return;
+    handlers.onRandomRatingSelect?.(Number(btn.dataset.value));
+  });
+  document.getElementById('random-clear').addEventListener('click', () => handlers.onRandomClear?.());
   document.getElementById('random-confirm').addEventListener('click', () => handlers.onRandomConfirm?.());
   document.getElementById('random-again').addEventListener('click', () => handlers.onRandomAgain?.());
   document.getElementById('random-open').addEventListener('click', () => handlers.onRandomOpen?.());
 }
 
 /* ===== 一覧画面 ===== */
-
-export function renderCategoryTabs(categories, activeId) {
-  document.getElementById('category-tabs').innerHTML = catChipsHtml(categories, activeId);
-}
 
 export function showState(state) {
   document.getElementById('state-loading').classList.toggle('hidden', state !== 'loading');
@@ -120,6 +166,30 @@ export function renderRecipeGrid(recipes, categoriesById) {
   }).join('');
 }
 
+/* ===== フィルタ ===== */
+
+export function openFilterOverlay() {
+  document.getElementById('filter-overlay').classList.add('open');
+}
+
+export function closeFilterOverlay() {
+  document.getElementById('filter-overlay').classList.remove('open');
+}
+
+export function renderFilterGroups(categories, activeIds) {
+  document.getElementById('filter-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds);
+}
+
+export function renderRatingRow(containerId, minRating) {
+  document.getElementById(containerId).innerHTML = ratingRowHtml(minRating);
+}
+
+export function updateFilterBadge(count) {
+  const el = document.getElementById('filter-badge');
+  el.textContent = String(count);
+  el.classList.toggle('hidden', count <= 0);
+}
+
 /* ===== レシピ詳細 ===== */
 
 export function openDetail() {
@@ -144,6 +214,7 @@ export function renderDetail(recipe, categoryNames) {
         recipe.fetch_status === 'failed' ? 'アーカイブの取得に失敗しています(URLは保存済みです)' : 'アーカイブは保存されていません'
       }</p>`;
   const tagsHtml = (categoryNames || []).map((n) => `<span class="cat-tag">${escHtml(n)}</span>`).join('');
+  const sizeStr = recipe.raw_html ? formatBytes(new TextEncoder().encode(recipe.raw_html).length) : '';
 
   document.getElementById('detail-content').innerHTML = `
     <div class="detail-thumb">${thumbHtml(recipe.image_url)}</div>
@@ -151,7 +222,7 @@ export function renderDetail(recipe, categoryNames) {
     <div class="rating-stars interactive">${starsHtml(recipe.rating, true)}</div>
     <div class="detail-meta">
       ${tagsHtml}
-      ${dateStr ? `<span style="font-size:12px; color:var(--text-2);">${escHtml(dateStr)} 保存</span>` : ''}
+      ${dateStr ? `<span style="font-size:12px; color:var(--text-2);">${escHtml(dateStr)} 保存${sizeStr ? ` ・ ${escHtml(sizeStr)}` : ''}</span>` : ''}
     </div>
     <p class="detail-url">${escHtml(recipe.url)}</p>
     ${recipe.memo ? `<div class="detail-memo">${escHtml(recipe.memo)}</div>` : ''}
@@ -190,8 +261,8 @@ export function closeRandomOverlay() {
   document.getElementById('random-overlay').classList.remove('open');
 }
 
-export function renderRandomCats(categories, activeId) {
-  document.getElementById('random-cats').innerHTML = catChipsHtml(categories, activeId);
+export function renderRandomCats(categories, activeIds) {
+  document.getElementById('random-cats').innerHTML = groupedCatGroupsHtml(categories, activeIds);
 }
 
 export function showRandomStep(step) {

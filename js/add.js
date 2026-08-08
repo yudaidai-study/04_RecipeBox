@@ -20,8 +20,10 @@ const newCatInput = document.getElementById('new-cat-input');
 const newCatAdd = document.getElementById('new-cat-add');
 
 const saveAgainBtn = document.getElementById('save-again-btn');
+const ratingPicker = document.getElementById('rating-picker');
 
 const selectedCategoryIds = new Set();
+let selectedRating = null;
 
 function prefillFromQuery() {
   const params = new URLSearchParams(location.search);
@@ -51,13 +53,13 @@ function tagChip(cat) {
   return btn;
 }
 
+// 自由入力タグの一覧は読み込まない: この画面で新しく追加したタグだけをfreeTagRowに表示する(④)。
 async function loadCategoriesIntoPicker() {
   try {
     const categories = await api.listCategories();
     for (const cat of categories) {
-      const row = cat.group_key
-        ? tagPicker.querySelector(`.tag-row[data-group="${cat.group_key}"]`)
-        : freeTagRow;
+      if (!cat.group_key) continue;
+      const row = tagPicker.querySelector(`.tag-row[data-group="${cat.group_key}"]`);
       row?.appendChild(tagChip(cat));
     }
   } catch (err) {
@@ -65,6 +67,22 @@ async function loadCategoriesIntoPicker() {
     showError('カテゴリの読み込みに失敗しました');
   }
 }
+
+function renderRatingPicker() {
+  let html = '';
+  for (let n = 1; n <= 5; n++) {
+    html += `<button type="button" class="star-btn ${n <= (selectedRating || 0) ? 'filled' : ''}" data-value="${n}" aria-label="${n}つ星">★</button>`;
+  }
+  ratingPicker.innerHTML = html;
+}
+
+ratingPicker.addEventListener('click', (e) => {
+  const btn = e.target.closest('.star-btn');
+  if (!btn) return;
+  const value = Number(btn.dataset.value);
+  selectedRating = selectedRating === value ? null : value; // 同じ星を再タップで評価解除
+  renderRatingPicker();
+});
 
 tagPicker.addEventListener('click', (e) => {
   const chip = e.target.closest('.cat-chip');
@@ -126,8 +144,10 @@ form.addEventListener('submit', async (e) => {
       url,
       categoryIds: [...selectedCategoryIds],
       memo: memoInput.value.trim(),
+      rating: selectedRating,
     });
     form.classList.add('hidden');
+    prefillNote.classList.add('hidden');
     saveDoneNote.textContent =
       recipe.fetch_status === 'failed'
         ? '保存しました(ページの取得には失敗しましたが、URLは保存されています)。このタブは閉じて大丈夫です。'
@@ -147,6 +167,8 @@ saveAgainBtn.addEventListener('click', () => {
   clearError();
   selectedCategoryIds.clear();
   tagPicker.querySelectorAll('.cat-chip.active').forEach((c) => c.classList.remove('active'));
+  selectedRating = null;
+  renderRatingPicker();
   prefillNote.classList.add('hidden');
   saveDone.classList.add('hidden');
   form.classList.remove('hidden');
@@ -154,6 +176,7 @@ saveAgainBtn.addEventListener('click', () => {
 });
 
 function init() {
+  renderRatingPicker();
   prefillFromQuery();
   initAuth(() => {
     loadCategoriesIntoPicker();

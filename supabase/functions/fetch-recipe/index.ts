@@ -244,10 +244,15 @@ Deno.serve(async (req: Request) => {
       return jsonError('invalid_request', 'リクエストの形式が正しくありません', 400);
     }
 
-    const { url, categoryIds, memo } = body as { url: string; categoryIds?: string[]; memo?: string | null };
+    const { url, categoryIds, memo, rating } = body as {
+      url: string; categoryIds?: string[]; memo?: string | null; rating?: number | null;
+    };
     const catIds = Array.isArray(categoryIds)
       ? [...new Set(categoryIds.filter((id): id is string => typeof id === 'string' && id.length > 0))]
       : [];
+    const ratingValue = typeof rating === 'number' && Number.isInteger(rating) && rating >= 1 && rating <= 5
+      ? rating
+      : null;
 
     let parsed: URL;
     try {
@@ -278,6 +283,7 @@ Deno.serve(async (req: Request) => {
         raw_html: page.ok ? page.html : null,
         fetch_status: page.ok ? 'ok' : 'failed',
         fetch_error: page.ok ? null : (page.error ?? null),
+        rating: ratingValue,
       })
       .select('id, title, image_url, url, fetch_status')
       .single();

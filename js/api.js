@@ -68,7 +68,7 @@ export async function createCategory(name) {
   return data;
 }
 
-export async function listRecipes({ categoryIds } = {}) {
+export async function listRecipes({ categoryIds, minRating } = {}) {
   assertReady();
   const hasFilter = Array.isArray(categoryIds) && categoryIds.length > 0;
   const relation = hasFilter ? 'recipe_categories!inner(category_id)' : 'recipe_categories(category_id)';
@@ -79,6 +79,7 @@ export async function listRecipes({ categoryIds } = {}) {
     .order('created_at', { ascending: false });
 
   if (hasFilter) query = query.in('recipe_categories.category_id', categoryIds);
+  if (minRating) query = query.gte('rating', minRating);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -96,13 +97,14 @@ export async function getRecipeDetail(id) {
   return data;
 }
 
-export async function getRandomRecipe(categoryIds) {
+export async function getRandomRecipe(categoryIds, minRating) {
   assertReady();
   const hasFilter = Array.isArray(categoryIds) && categoryIds.length > 0;
   const relation = hasFilter ? 'recipe_categories!inner(category_id)' : 'recipe_categories(category_id)';
 
   let query = supabase.from('recipes').select(`id, title, image_url, url, ${relation}`);
   if (hasFilter) query = query.in('recipe_categories.category_id', categoryIds);
+  if (minRating) query = query.gte('rating', minRating);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -112,10 +114,10 @@ export async function getRandomRecipe(categoryIds) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-export async function saveRecipe({ url, categoryIds, memo }) {
+export async function saveRecipe({ url, categoryIds, memo, rating }) {
   assertReady();
   const { data, error } = await supabase.functions.invoke('fetch-recipe', {
-    body: { url, categoryIds: categoryIds || [], memo: memo || null },
+    body: { url, categoryIds: categoryIds || [], memo: memo || null, rating: rating || null },
   });
 
   if (error) {
