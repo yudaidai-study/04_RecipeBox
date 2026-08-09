@@ -20,11 +20,7 @@ const state = {
   filterDraftKeywords: new Set(),
   detailRecipe: null,
   detailCategoryNames: [],
-  // 編集ポップアップを開いている間だけの下書き(「保存する」を押すまでDBへ反映しない)。
-  // editTargetRecipe/editOriginは、詳細画面・ランダム表示結果のどちらから編集を開いたかを覚えておき、
-  // 保存後にどちらを再描画すべきか判定するために使う。
-  editTargetRecipe: null,
-  editOrigin: 'detail', // 'detail' | 'random'
+  // 編集ポップアップを開いている間だけの下書き(「保存する」を押すまでDBへ反映しない)
   editDraftCategoryIds: new Set(),
   editDraftRating: null,
   // 献立に追加するレシピのid(詳細画面・今日は何作る結果画面のどちらから開いたかは問わない)
@@ -111,20 +107,15 @@ function filterActiveCount() {
   return state.activeCategoryIds.size + state.activeKeywords.size + (state.activeMinRating ? 1 : 0);
 }
 
-// レシピ詳細・ランダム表示結果で共通に使うタグ名解決(recipe_categories -> カテゴリ名の配列)。
-function categoryNamesFor(recipe) {
-  return (recipe.recipe_categories || [])
-    .map((rc) => state.categoriesById.get(rc.category_id)?.name)
-    .filter(Boolean);
-}
-
 async function openDetail(id) {
   ui.openDetail();
   ui.showDetailLoading();
   try {
     const recipe = await api.getRecipeDetail(id);
     state.detailRecipe = recipe;
-    const names = categoryNamesFor(recipe);
+    const names = (recipe.recipe_categories || [])
+      .map((rc) => state.categoriesById.get(rc.category_id)?.name)
+      .filter(Boolean);
     state.detailCategoryNames = names;
     ui.renderDetail(recipe, names);
   } catch (err) {

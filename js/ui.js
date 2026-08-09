@@ -249,17 +249,9 @@ export function initUI(h) {
   });
   document.getElementById('random-clear').addEventListener('click', () => handlers.onRandomClear?.());
   document.getElementById('random-confirm').addEventListener('click', () => handlers.onRandomConfirm?.());
-  // ランダム表示の結果(レシピ詳細画面と同じレイアウト、編集ボタンを含む)はrenderRandomResultで
-  // 動的に生成されるため、固定idではなくdata-actionで委譲する。
-  document.getElementById('random-result-content')?.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    const action = btn.dataset.action;
-    if (action === 'open-original') handlers.onRandomOpen?.();
-    if (action === 'edit') handlers.onRandomEdit?.();
-    if (action === 'add-to-plan') handlers.onRandomAddToPlan?.();
-    if (action === 'again') handlers.onRandomAgain?.();
-  });
+  document.getElementById('random-again').addEventListener('click', () => handlers.onRandomAgain?.());
+  document.getElementById('random-open').addEventListener('click', () => handlers.onRandomOpen?.());
+  document.getElementById('random-add-to-plan').addEventListener('click', () => handlers.onRandomAddToPlan?.());
 
   setupFreeTagDropdown('filter', (name) => handlers.onFilterFreeTagPick?.(name));
   setupFreeTagDropdown('random', (name) => handlers.onRandomFreeTagPick?.(name));
@@ -565,16 +557,16 @@ function archiveToggleHtml(enabled) {
     </button>`;
 }
 
-// レシピ詳細・ランダム表示結果で共通の情報表示(サムネイル・タイトル・評価・タグ・URL・メモ)。
-// アーカイブトグルは詳細画面専用(showArchiveToggle=trueの時のみ)。
-function recipeBodyHtml(recipe, categoryNames, { showArchiveToggle = false, dateStr } = {}) {
+export function renderDetail(recipe, categoryNames) {
+  const dateStr = recipe.created_at ? new Date(recipe.created_at).toLocaleDateString('ja-JP') : '';
   const tagsHtml = (categoryNames || []).map((n) => `<span class="cat-tag">${escHtml(n)}</span>`).join('');
-  return `
+
+  document.getElementById('detail-content').innerHTML = `
     <div class="detail-thumb" data-action="open-original" role="button" aria-label="レシピを見る">${thumbHtml(recipe.image_url)}</div>
     <h2 class="detail-title">${escHtml(recipe.title || recipe.url)}</h2>
     <div class="detail-rating-row">
       <div class="rating-stars lg">${starsHtml(recipe.rating, false)}</div>
-      ${showArchiveToggle ? archiveToggleHtml(recipe.archive_enabled) : ''}
+      ${archiveToggleHtml(recipe.archive_enabled)}
     </div>
     <div class="detail-meta">
       ${tagsHtml}
@@ -582,24 +574,13 @@ function recipeBodyHtml(recipe, categoryNames, { showArchiveToggle = false, date
     </div>
     <p class="detail-url">${escHtml(recipe.url)}</p>
     ${recipe.memo ? `<div class="detail-memo">${escHtml(recipe.memo)}</div>` : ''}
-  `;
-}
-
-// 編集/レシピを見る/献立に追加の3ボタン行(詳細画面・ランダム結果で共通)。
-function recipeActionsHtml() {
-  return `
-    <div class="btn-row">
-      <button class="btn btn-secondary" data-action="edit" type="button">編集</button>
-      <button class="btn btn-secondary" data-action="open-original" type="button">レシピを見る</button>
-      <button class="btn btn-primary" data-action="add-to-plan" type="button">献立に追加</button>
-    </div>`;
-}
-
-export function renderDetail(recipe, categoryNames) {
-  const dateStr = recipe.created_at ? new Date(recipe.created_at).toLocaleDateString('ja-JP') : '';
-  document.getElementById('detail-content').innerHTML = `
-    ${recipeBodyHtml(recipe, categoryNames, { showArchiveToggle: true, dateStr })}
-    <div class="detail-actions">${recipeActionsHtml()}</div>
+    <div class="detail-actions">
+      <div class="btn-row">
+        <button class="btn btn-secondary" data-action="edit" type="button">編集</button>
+        <button class="btn btn-secondary" data-action="open-original" type="button">レシピを見る</button>
+        <button class="btn btn-primary" data-action="add-to-plan" type="button">献立に追加</button>
+      </div>
+    </div>
     <div id="archive-frame-wrap" class="archive-frame-wrap hidden"></div>
   `;
 }
@@ -718,17 +699,12 @@ export function showRandomStep(step) {
   });
 }
 
-// ランダム表示の結果(レシピ詳細画面と同じレイアウト)。編集/レシピを見る/献立に追加の下に
-// 「もう一回」を配置する。ホーム(random-result-content)・カレンダーの日別ランダム追加
-// (day-random-content)のどちらからも同じ関数を使う。
-export function renderRandomResult(containerId, recipe, categoryNames) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  el.innerHTML = `
-    ${recipeBodyHtml(recipe, categoryNames)}
-    ${recipeActionsHtml()}
-    <button class="btn btn-secondary" data-action="again" type="button" style="margin-top:10px;">もう一回</button>
-  `;
+export function renderRandomResult(recipe) {
+  document.getElementById('random-result-content').innerHTML = `
+    <div class="reveal-card">
+      <div class="thumb">${thumbHtml(recipe.image_url)}</div>
+      <div class="body"><p class="title">${escHtml(recipe.title || recipe.url)}</p></div>
+    </div>`;
 }
 
 /* ===== トースト ===== */

@@ -126,7 +126,7 @@
         </div>
         <div id="random-cats"></div>
         <div class="tag-group">
-          <p class="tag-group-label">自由入力</p>
+          <p class="tag-group-label">タグ検索</p>
           <div class="tag-row" id="random-free-tag-row"></div>
           <div class="free-tag-combo">
             <input type="text" id="random-free-tag-input" class="free-tag-picker-input" list="random-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
@@ -150,9 +150,13 @@
         <p>このカテゴリにはまだレシピがありません。</p>
       </div>
 
-      <!-- レシピ詳細画面と同じレイアウトで表示する(編集/レシピを見る/献立に追加/もう一回はrenderRandomResultが生成) -->
-      <div id="random-step-result" class="hidden">
+      <div id="random-step-result" class="reveal-wrap hidden">
         <div id="random-result-content"></div>
+        <div class="btn-row" style="margin-top:16px;">
+          <button id="random-again" class="btn btn-secondary" type="button">もう一回</button>
+          <button id="random-open" class="btn btn-secondary" type="button">レシピを見る</button>
+          <button id="random-add-to-plan" class="btn btn-primary" type="button">献立に追加</button>
+        </div>
       </div>
     </div>
   </div>
@@ -218,7 +222,7 @@
       </div>
       <div id="filter-cat-groups"></div>
       <div class="tag-group">
-        <p class="tag-group-label">自由入力・キーワード検索</p>
+        <p class="tag-group-label">タグ/キーワード検索</p>
         <div class="tag-row" id="filter-free-tag-row"></div>
         <div class="free-tag-combo">
           <input type="text" id="filter-free-tag-input" class="free-tag-picker-input" list="filter-free-tag-suggestions" placeholder="タグ名または料理名の一部を入力してEnter" autocomplete="off">

@@ -97,7 +97,7 @@
           </div>
           <div id="day-filter-cats"></div>
           <div class="tag-group">
-            <p class="tag-group-label" id="day-filter-free-tag-label">自由入力</p>
+            <p class="tag-group-label" id="day-filter-free-tag-label">タグ検索</p>
             <div class="tag-row" id="day-filter-free-tag-row"></div>
             <div class="free-tag-combo">
               <input type="text" id="day-filter-free-tag-input" class="free-tag-picker-input" list="day-filter-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
@@ -127,48 +127,17 @@
         <!-- 検索結果は別画面(条件ステップは隠す)。1件選ぶと直下に「レシピを見る」「献立に追加」が展開される。 -->
         <div id="day-search-results" class="day-recipe-results hidden"></div>
 
-        <!-- レシピ詳細画面と同じレイアウトで表示する(編集/レシピを見る/献立に追加/もう一回はrenderRandomResultが生成) -->
         <div id="day-random-box" class="hidden">
           <div id="day-random-content"></div>
+          <div class="btn-row" style="margin-top:10px;">
+            <button id="day-random-again" class="btn btn-secondary" type="button">もう一回</button>
+            <button id="day-random-view" class="btn btn-secondary" type="button">レシピを見る</button>
+            <button id="day-random-add" class="btn btn-primary" type="button">献立に追加</button>
+          </div>
         </div>
 
         <p id="day-filter-empty" class="cal-empty-note hidden">条件に合うレシピが見つかりません</p>
       </div>
-    </div>
-  </div>
-
-  <!-- レシピ編集(タグ・評価)。ランダム表示結果の「編集」ボタンから開く。index.htmlの編集画面と同じid構成 -->
-  <div id="edit-overlay" class="overlay">
-    <div class="sheet">
-      <div class="sheet-handle"></div>
-      <button class="sheet-close" id="edit-close" aria-label="閉じる">✕</button>
-      <h2 style="margin:4px 0 16px; font-size:18px;">編集</h2>
-      <div class="tag-group">
-        <p class="tag-group-label">評価</p>
-        <div id="edit-rating-row" class="rating-stars interactive"></div>
-      </div>
-      <div id="edit-cat-groups"></div>
-      <div class="tag-group">
-        <p class="tag-group-label">自由入力</p>
-        <div class="tag-row" id="edit-free-tag-row"></div>
-        <div id="edit-new-cat-toggle-wrap">
-          <button id="edit-new-cat-toggle" class="btn-text" type="button" style="padding:8px 0;">＋ タグを追加</button>
-        </div>
-        <div id="edit-new-cat-row" class="new-cat-row hidden">
-          <input id="edit-new-cat-input" type="text" placeholder="タグ名(既存候補から選択も可)" maxlength="30" list="edit-free-tag-suggestions" autocomplete="off">
-          <datalist id="edit-free-tag-suggestions"></datalist>
-          <button id="edit-new-cat-add" type="button">追加</button>
-        </div>
-      </div>
-      <div class="field">
-        <label for="edit-memo-input">メモ</label>
-        <textarea id="edit-memo-input" placeholder="次回作るときのメモなど"></textarea>
-      </div>
-      <div class="btn-row" style="margin-top:20px;">
-        <button id="edit-cancel" class="btn btn-secondary" type="button">キャンセル</button>
-        <button id="edit-save" class="btn btn-primary" type="button">保存する</button>
-      </div>
-      <button id="edit-delete" class="btn btn-danger" type="button" style="margin-top:10px;">削除</button>
     </div>
   </div>
 
