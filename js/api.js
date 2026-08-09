@@ -171,8 +171,7 @@ export async function getRandomRecipe(categoryIds, minRating) {
   const hasFilter = Array.isArray(categoryIds) && categoryIds.length > 0;
   const relation = hasFilter ? 'recipe_categories!inner(category_id)' : 'recipe_categories(category_id)';
 
-  // ランダム表示の結果もレシピ詳細画面と同じレイアウトで表示するため、評価・メモも合わせて取得する。
-  let query = supabase.from('recipes').select(`id, title, image_url, url, rating, memo, ${relation}`);
+  let query = supabase.from('recipes').select(`id, title, image_url, url, ${relation}`);
   if (hasFilter) query = query.in('recipe_categories.category_id', categoryIds);
   if (minRating) query = query.gte('rating', minRating);
 
