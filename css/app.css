@@ -181,25 +181,38 @@ img {
 
 .dice-ico { font-size: 17px; line-height: 1; }
 
+/* 省スペースのため、ラベルとメニュー一覧を横並びにし、横幅いっぱいまで使う */
 .today-plan {
   margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .today-plan-label {
-  margin: 0 0 8px;
+  margin: 0;
+  flex-shrink: 0;
   font-size: 12px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
 }
 .today-plan-list {
+  flex: 1;
+  min-width: 0;
   display: flex;
   gap: 8px;
   overflow-x: auto;
 }
 .today-plan-empty {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   padding: 9px 2px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .today-plan-item {
   flex-shrink: 0;
@@ -1011,6 +1024,7 @@ main {
   background: var(--surface-1);
 }
 .day-text-add-row button {
+  width: auto;
   flex-shrink: 0;
   padding: 0 18px;
   min-height: 44px;

@@ -133,11 +133,11 @@ export function initUI(h) {
   document.getElementById('retry-btn').addEventListener('click', () => handlers.onRetry?.());
   document.getElementById('today-btn')?.addEventListener('click', () => handlers.onTodayCta?.());
   document.getElementById('logout-btn')?.addEventListener('click', () => handlers.onLogout?.());
-  // 今日の献立(④): レシピに紐付く項目だけクリックでレシピ詳細へ飛べる。
+  // 今日の献立(④): レシピに紐付く項目だけクリックで元のページへ直接飛べる。
   document.getElementById('today-plan-list')?.addEventListener('click', (e) => {
-    const item = e.target.closest('.today-plan-item[data-recipe-id]');
+    const item = e.target.closest('.today-plan-item[data-url]');
     if (!item) return;
-    handlers.onTodayPlanItemClick?.(item.dataset.recipeId);
+    handlers.onTodayPlanItemClick?.(item.dataset.url);
   });
 
   document.getElementById('detail-overlay').addEventListener('click', (e) => {
@@ -274,7 +274,8 @@ export function renderRecipeGrid(recipes, categoriesById) {
   }).join('');
 }
 
-// 今日の献立(④)。recipe_idが付いている項目だけクリック可能にし、テキストのみの献立(②)は表示専用にする。
+// 今日の献立(④)。urlが付いている項目(レシピ紐付き)だけクリック可能にし、元のページへ直接飛ぶ。
+// テキストのみの献立(②)はurlが無いため表示専用にする。
 export function renderTodayPlan(entries) {
   const list = document.getElementById('today-plan-list');
   if (!list) return;
@@ -283,9 +284,9 @@ export function renderTodayPlan(entries) {
     return;
   }
   list.innerHTML = entries.map((e) => {
-    const clickable = !!e.recipe_id;
+    const clickable = !!e.url;
     return `
-      <button type="button" class="today-plan-item ${clickable ? '' : 'not-clickable'}" ${clickable ? `data-recipe-id="${escHtml(e.recipe_id)}"` : 'disabled'}>
+      <button type="button" class="today-plan-item ${clickable ? '' : 'not-clickable'}" ${clickable ? `data-url="${escHtml(e.url)}"` : 'disabled'}>
         <span class="thumb">${thumbHtml(e.image_url)}</span>
         <span class="title">${escHtml(e.title)}</span>
       </button>`;

@@ -74,6 +74,7 @@ async function loadTodayPlan() {
       recipe_id: r.recipe_id,
       title: r.recipe_id ? (r.recipes?.title || r.recipes?.url || '(削除済みのレシピ)') : r.note,
       image_url: r.recipes?.image_url || null,
+      url: r.recipes?.url || null,
     }));
     ui.renderTodayPlan(entries);
   } catch (err) {
@@ -365,8 +366,8 @@ function init() {
         ui.toast('献立への追加に失敗しました');
       }
     },
-    onTodayPlanItemClick(recipeId) {
-      openDetail(recipeId);
+    onTodayPlanItemClick(url) {
+      window.open(url, '_blank', 'noopener');
     },
     onDetailEdit() {
       const recipe = state.detailRecipe;
