@@ -19,10 +19,14 @@ const dayRandomBtn = document.getElementById('day-random-btn');
 const dayFilterPanel = document.getElementById('day-filter-panel');
 const dayFilterBack = document.getElementById('day-filter-back');
 const dayFilterModeLabel = document.getElementById('day-filter-mode-label');
+const dayFilterConditions = document.getElementById('day-filter-conditions');
 const dayFilterCats = document.getElementById('day-filter-cats');
 const dayFilterFreeTagRow = document.getElementById('day-filter-free-tag-row');
 const dayFilterFreeTagInput = document.getElementById('day-filter-free-tag-input');
 const dayFilterRatingRow = document.getElementById('day-filter-rating-row');
+const dayRandomPickActions = document.getElementById('day-random-pick-actions');
+const dayRandomClearBtn = document.getElementById('day-random-clear');
+const dayRandomConfirmBtn = document.getElementById('day-random-confirm');
 const daySearchResults = document.getElementById('day-search-results');
 const dayRandomBox = document.getElementById('day-random-box');
 const dayRandomContent = document.getElementById('day-random-content');
@@ -45,6 +49,7 @@ const state = {
   filterMinRating: null,
   lastSearchResults: [], // 検索結果クリック時にidから全情報を引くための一時キャッシュ
   searchSelectedRecipe: null, // 検索結果から選択中の1件(⑯: レシピを見る/献立に追加の対象)
+  randomStep: 'pick', // 'pick' | 'result'(今日は何作る?と同じ2段階の画面遷移)
   randomCandidate: null,
 };
 
@@ -162,9 +167,12 @@ function closeDayFilterPanel() {
   state.filterMode = null;
   state.filterCategoryIds = new Set();
   state.filterMinRating = null;
+  state.randomStep = 'pick';
   state.randomCandidate = null;
   state.searchSelectedRecipe = null;
   dayFilterPanel.classList.add('hidden');
+  dayFilterConditions.classList.add('hidden');
+  dayRandomPickActions.classList.add('hidden');
   daySearchResults.classList.add('hidden');
   dayRandomBox.classList.add('hidden');
   dayFilterEmpty.classList.add('hidden');
@@ -193,33 +201,50 @@ async function ensureCategoriesLoaded() {
   }
 }
 
-// カテゴリ・評価の条件が変わるたびに、検索モードなら一覧を、ランダムモードなら候補を引き直す。
+// 検索モードは条件を変えるたびに一覧を引き直す(ライブ更新)。ランダムモードは今日は何作る?と同じく
+// 「決める!」を押すまで抽選しない(条件変更のたびに再抽選すると挙動が揃わないため)。
 function applyDayFilterChange() {
   if (state.filterMode === 'search') refreshDaySearchResults();
-  else if (state.filterMode === 'random') drawDayRandomCandidate();
+}
+
+function renderDayFilterConditions() {
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
+  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
+  ui.renderRatingRow('day-filter-rating-row', state.filterMinRating);
 }
 
 async function openDayFilterPanel(mode) {
   await ensureCategoriesLoaded();
   state.filterMode = mode;
+  state.randomStep = 'pick';
   state.randomCandidate = null;
   dayFilterModeLabel.textContent = mode === 'search' ? '🔍 検索して追加' : '🎲 ランダムで追加';
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
-  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
+  renderDayFilterConditions();
   dayFilterFreeTagInput.value = '';
-  ui.renderRatingRow('day-filter-rating-row', state.filterMinRating);
   dayMainView.classList.add('hidden'); // フィルタより上の領域(献立一覧・追加ボタン)は隠す(⑫)
   dayFilterPanel.classList.remove('hidden');
+  dayFilterConditions.classList.remove('hidden');
   dayFilterEmpty.classList.add('hidden');
   if (mode === 'search') {
+    dayRandomPickActions.classList.add('hidden');
     dayRandomBox.classList.add('hidden');
     daySearchResults.classList.remove('hidden');
     await refreshDaySearchResults();
   } else {
+    // ランダムモードは「決める!」ステップから始める(今日は何作る?と同じ画面遷移)。
     daySearchResults.classList.add('hidden');
-    dayRandomBox.classList.remove('hidden');
-    await drawDayRandomCandidate();
+    dayRandomBox.classList.add('hidden');
+    dayRandomPickActions.classList.remove('hidden');
   }
+}
+
+// 「決める!」を押した時点で結果ステップへ遷移し、条件UIを隠して抽選結果だけを表示する。
+async function confirmDayRandom() {
+  state.randomStep = 'result';
+  dayFilterConditions.classList.add('hidden');
+  dayRandomPickActions.classList.add('hidden');
+  dayRandomBox.classList.remove('hidden');
+  await drawDayRandomCandidate();
 }
 
 async function refreshDaySearchResults() {
@@ -414,6 +439,13 @@ daySearchResults.addEventListener('click', (e) => {
   state.searchSelectedRecipe = state.searchSelectedRecipe?.id === recipe.id ? null : recipe;
   renderSearchResultsList();
 });
+
+dayRandomClearBtn.addEventListener('click', () => {
+  state.filterCategoryIds = new Set();
+  state.filterMinRating = null;
+  renderDayFilterConditions();
+});
+dayRandomConfirmBtn.addEventListener('click', () => confirmDayRandom());
 
 dayRandomAgainBtn.addEventListener('click', () => drawDayRandomCandidate());
 dayRandomViewBtn.addEventListener('click', () => {
