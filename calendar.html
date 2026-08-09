@@ -86,6 +86,10 @@
         <!-- 検索・ランダムどちらも「条件を選ぶ」ステップでのみ表示し、確定(検索する/決める!)を押したら
              隠して結果ステップへ遷移する(検索・ランダムで同じ画面遷移にするため)。 -->
         <div id="day-filter-conditions">
+          <div class="tag-group">
+            <p class="tag-group-label">評価</p>
+            <div id="day-filter-rating-row" class="rating-stars interactive"></div>
+          </div>
           <div id="day-filter-cats"></div>
           <div class="tag-group">
             <p class="tag-group-label">自由入力</p>
@@ -96,9 +100,10 @@
             <input type="text" id="day-filter-free-tag-input" class="free-tag-picker-input" list="day-filter-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
             <datalist id="day-filter-free-tag-suggestions"></datalist>
           </div>
-          <div class="tag-group">
-            <p class="tag-group-label">評価</p>
-            <div id="day-filter-rating-row" class="rating-stars interactive"></div>
+          <!-- 検索モードのみ表示(フィルタ画面と同じ並び順選択、⑪): ランダムモードでは意味がないため隠す -->
+          <div id="day-search-sort-group" class="tag-group hidden">
+            <p class="tag-group-label">並び順</p>
+            <div id="day-search-sort-row" class="tag-row"></div>
           </div>
         </div>
 

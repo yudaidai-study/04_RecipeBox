@@ -25,6 +25,8 @@ const dayFilterFreeTagRow = document.getElementById('day-filter-free-tag-row');
 const dayFilterFreeTagSelect = document.getElementById('day-filter-free-tag-select');
 const dayFilterFreeTagInput = document.getElementById('day-filter-free-tag-input');
 const dayFilterRatingRow = document.getElementById('day-filter-rating-row');
+const daySearchSortGroup = document.getElementById('day-search-sort-group');
+const daySearchSortRow = document.getElementById('day-search-sort-row');
 const daySearchPickActions = document.getElementById('day-search-pick-actions');
 const daySearchClearBtn = document.getElementById('day-search-clear');
 const daySearchConfirmBtn = document.getElementById('day-search-confirm');
@@ -51,6 +53,7 @@ const state = {
   filterMode: null, // 'search' | 'random' | null
   filterCategoryIds: new Set(),
   filterMinRating: null,
+  filterSortOrder: 'created', // 検索結果の並び順(⑪フィルタ画面と同じ選択肢)。デフォルトは最近追加した順
   lastSearchResults: [], // 検索結果クリック時にidから全情報を引くための一時キャッシュ
   searchSelectedRecipe: null, // 検索結果から選択中の1件(⑯: レシピを見る/献立に追加の対象)
   randomStep: 'pick', // 'pick' | 'result'(今日は何作る?と同じ2段階の画面遷移)
@@ -171,6 +174,7 @@ function closeDayFilterPanel() {
   state.filterMode = null;
   state.filterCategoryIds = new Set();
   state.filterMinRating = null;
+  state.filterSortOrder = 'created';
   state.randomStep = 'pick';
   state.randomCandidate = null;
   state.searchSelectedRecipe = null;
@@ -210,6 +214,7 @@ function renderDayFilterConditions() {
   ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
   ui.renderRatingRow('day-filter-rating-row', state.filterMinRating);
+  ui.renderSortRow('day-search-sort-row', state.filterSortOrder);
 }
 
 // 検索・ランダムどちらも「条件を選ぶ」ステップから始まり、確定ボタン(検索する/決める!)を押すまでは
@@ -229,6 +234,7 @@ async function openDayFilterPanel(mode) {
   dayFilterEmpty.classList.add('hidden');
   daySearchResults.classList.add('hidden');
   dayRandomBox.classList.add('hidden');
+  daySearchSortGroup.classList.toggle('hidden', mode !== 'search'); // 並び順は検索モードのみ意味があるため
   if (mode === 'search') {
     dayRandomPickActions.classList.add('hidden');
     daySearchPickActions.classList.remove('hidden');
@@ -260,6 +266,7 @@ async function refreshDaySearchResults() {
     const recipes = await api.listRecipes({
       categoryIds: [...state.filterCategoryIds],
       minRating: state.filterMinRating,
+      sortOrder: state.filterSortOrder,
     });
     state.lastSearchResults = recipes;
     state.searchSelectedRecipe = null;
@@ -457,9 +464,18 @@ daySearchResults.addEventListener('click', (e) => {
 daySearchClearBtn.addEventListener('click', () => {
   state.filterCategoryIds = new Set();
   state.filterMinRating = null;
+  state.filterSortOrder = 'created';
   renderDayFilterConditions();
 });
 daySearchConfirmBtn.addEventListener('click', () => confirmDaySearch());
+
+// 並び順は複数選択ではなく常にどれか1つが選ばれている状態にする(トグルではなく選択)。
+daySearchSortRow.addEventListener('click', (e) => {
+  const chip = e.target.closest('.cat-chip');
+  if (!chip) return;
+  state.filterSortOrder = chip.dataset.value;
+  ui.renderSortRow('day-search-sort-row', state.filterSortOrder);
+});
 
 dayRandomClearBtn.addEventListener('click', () => {
   state.filterCategoryIds = new Set();

@@ -120,6 +120,10 @@
       <div id="random-step-pick">
         <h2 style="margin:4px 0 4px; font-size:18px;">今日は何作る?</h2>
         <p style="margin:0 0 18px; color:var(--text-2); font-size:13px;">カテゴリを選んで決めよう</p>
+        <div class="tag-group">
+          <p class="tag-group-label">評価</p>
+          <div id="random-rating-row" class="rating-stars interactive"></div>
+        </div>
         <div id="random-cats"></div>
         <div class="tag-group">
           <p class="tag-group-label">自由入力</p>
@@ -129,10 +133,6 @@
           </select>
           <input type="text" id="random-free-tag-input" class="free-tag-picker-input" list="random-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
           <datalist id="random-free-tag-suggestions"></datalist>
-        </div>
-        <div class="tag-group">
-          <p class="tag-group-label">評価</p>
-          <div id="random-rating-row" class="rating-stars interactive"></div>
         </div>
         <div class="btn-row" style="margin-top:18px;">
           <button id="random-clear" class="btn btn-secondary" type="button">クリア</button>

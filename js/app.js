@@ -215,7 +215,7 @@ function init() {
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
       ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
       ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
-      ui.renderSortRow(state.filterDraftSortOrder);
+      ui.renderSortRow('filter-sort-row', state.filterDraftSortOrder);
       ui.openFilterOverlay();
     },
     onFilterClose() {
@@ -255,7 +255,7 @@ function init() {
     // 並び順は常にどれか1つが選ばれている状態(トグルではなく選択)。
     onFilterSortSelect(value) {
       state.filterDraftSortOrder = value;
-      ui.renderSortRow(state.filterDraftSortOrder);
+      ui.renderSortRow('filter-sort-row', state.filterDraftSortOrder);
     },
     onFilterClear() {
       state.filterDraftCategoryIds.clear();
@@ -264,7 +264,7 @@ function init() {
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
       ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
       ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
-      ui.renderSortRow(state.filterDraftSortOrder);
+      ui.renderSortRow('filter-sort-row', state.filterDraftSortOrder);
     },
     onFilterApply() {
       state.activeCategoryIds = new Set(state.filterDraftCategoryIds);

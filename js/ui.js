@@ -314,8 +314,8 @@ export function renderRatingRow(containerId, minRating) {
   document.getElementById(containerId).innerHTML = ratingRowHtml(minRating);
 }
 
-export function renderSortRow(activeValue) {
-  document.getElementById('filter-sort-row').innerHTML = sortRowHtml(activeValue);
+export function renderSortRow(containerId, activeValue) {
+  document.getElementById(containerId).innerHTML = sortRowHtml(activeValue);
 }
 
 export function updateFilterBadge(count) {
@@ -357,8 +357,8 @@ export function renderDetail(recipe, categoryNames) {
     <div class="detail-actions">
       <div class="btn-row">
         <button class="btn btn-secondary" data-action="edit" type="button">編集</button>
-        <button class="btn btn-primary" data-action="open-original" type="button">レシピを見る</button>
-        <button class="btn btn-secondary" data-action="add-to-plan" type="button">献立に追加</button>
+        <button class="btn btn-secondary" data-action="open-original" type="button">レシピを見る</button>
+        <button class="btn btn-primary" data-action="add-to-plan" type="button">献立に追加</button>
       </div>
     </div>
     <div id="archive-frame-wrap" class="archive-frame-wrap hidden"></div>
