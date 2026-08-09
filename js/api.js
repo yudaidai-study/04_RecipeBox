@@ -6,6 +6,28 @@ function assertReady() {
   }
 }
 
+// アーカイブHTML内の画像をミラーリングして保存しているStorageバケット(archive-recipe Edge Functionが書き込む)。
+const ARCHIVE_BUCKET = 'recipe-archives';
+
+// レシピ単位でミラーリング済み画像をまとめて削除する(アーカイブをOFFにした時・レシピ削除時)。
+// 一覧取得・削除いずれかに失敗しても、呼び出し元の本処理(トグル更新・レシピ削除)は継続させたいため、
+// ここでは例外を投げずログのみに留める(ベストエフォート)。
+async function removeArchivedImages(recipeId) {
+  try {
+    const { data: files, error: listError } = await supabase.storage.from(ARCHIVE_BUCKET).list(recipeId);
+    if (listError) {
+      console.error('アーカイブ画像の一覧取得に失敗しました', listError);
+      return;
+    }
+    if (!files || files.length === 0) return;
+    const paths = files.map((f) => `${recipeId}/${f.name}`);
+    const { error: removeError } = await supabase.storage.from(ARCHIVE_BUCKET).remove(paths);
+    if (removeError) console.error('アーカイブ画像の削除に失敗しました', removeError);
+  } catch (err) {
+    console.error('アーカイブ画像の削除に失敗しました', err);
+  }
+}
+
 // group_key(固定3グループ)の表示順。自由入力タグ(group_key=null)は常に末尾。
 const GROUP_ORDER = { genre: 1, role: 2, main_ingredient: 3 };
 
@@ -226,6 +248,7 @@ export async function checkLinkReachable(url) {
 export async function setArchiveEnabled(recipe, enabled) {
   assertReady();
   if (!enabled) {
+    await removeArchivedImages(recipe.id); // ミラーリング済み画像も一緒に破棄する
     const { error } = await supabase
       .from('recipes')
       .update({ archive_enabled: false, raw_html: null })
@@ -278,6 +301,7 @@ export async function updateRecipeCategories(recipeId, categoryIds) {
 
 export async function deleteRecipe(id) {
   assertReady();
+  await removeArchivedImages(id); // ミラーリング済み画像も一緒に破棄する(ベストエフォート)
   const { error } = await supabase.from('recipes').delete().eq('id', id);
   if (error) throw error;
 }
