@@ -133,12 +133,14 @@ export function initUI(h) {
   document.getElementById('retry-btn').addEventListener('click', () => handlers.onRetry?.());
   document.getElementById('today-btn')?.addEventListener('click', () => handlers.onTodayCta?.());
 
-  // 左下メニュー(ログアウト・DB使用容量確認)
+  // 左下メニュー(統計・DB使用容量確認・ログアウト)
   document.getElementById('menu-fab')?.addEventListener('click', () => handlers.onMenuOpen?.());
   document.getElementById('menu-close')?.addEventListener('click', () => handlers.onMenuClose?.());
   document.getElementById('menu-overlay')?.addEventListener('click', (e) => {
     if (e.target.id === 'menu-overlay') handlers.onMenuClose?.();
   });
+  document.getElementById('menu-stats-btn')?.addEventListener('click', () => handlers.onMenuStatsOpen?.());
+  document.getElementById('menu-stats-back')?.addEventListener('click', () => handlers.onMenuStatsBack?.());
   document.getElementById('menu-usage-btn')?.addEventListener('click', () => handlers.onMenuUsageOpen?.());
   document.getElementById('menu-usage-back')?.addEventListener('click', () => handlers.onMenuUsageBack?.());
   document.getElementById('menu-logout-btn')?.addEventListener('click', () => handlers.onLogout?.());
@@ -332,6 +334,18 @@ export function closeMenuOverlay() {
 export function showMenuStep(step) {
   document.getElementById('menu-step-main').classList.toggle('hidden', step !== 'main');
   document.getElementById('menu-step-usage').classList.toggle('hidden', step !== 'usage');
+  document.getElementById('menu-step-stats').classList.toggle('hidden', step !== 'stats');
+}
+
+// ヘッダーの「全n品」表示・メニューのバージョン表示。
+export function setAppItemCount(count) {
+  const el = document.getElementById('app-item-count');
+  if (el) el.textContent = `全${count}品`;
+}
+
+export function setMenuVersion(version) {
+  const el = document.getElementById('menu-version');
+  if (el) el.textContent = `バージョン ${version}`;
 }
 
 export function showMenuUsageLoading() {
@@ -373,6 +387,40 @@ export function renderUsageSummary(data) {
     <p class="tag-group-label" style="margin-top:18px;">Storageバケット別内訳(アーカイブ画像)</p>
     <div class="usage-list">${bucketsHtml}</div>
     <p class="archive-note" style="margin-top:14px; border-radius:var(--radius-sm);">Supabase無料プランの目安: データベース500MB・Storage 1GB</p>
+  `;
+}
+
+export function showMenuStatsLoading() {
+  const el = document.getElementById('menu-stats-content');
+  if (el) el.innerHTML = '<div class="loading-state"><span class="spin-emoji">🍳</span></div>';
+}
+
+export function showMenuStatsError(message) {
+  const el = document.getElementById('menu-stats-content');
+  if (el) el.innerHTML = `<p class="cal-empty-note">${escHtml(message)}</p>`;
+}
+
+// api.getStats()の結果(品目総数・献立登録回数ランキング)を表示する。
+export function renderMenuStats(stats) {
+  const el = document.getElementById('menu-stats-content');
+  if (!el) return;
+  const rankingHtml = (stats.ranking || []).length
+    ? stats.ranking.map((r, i) => `
+        <div class="stats-rank-row">
+          <span class="stats-rank-no">${i + 1}</span>
+          <span class="thumb">${thumbHtml(r.image_url)}</span>
+          <span class="title">${escHtml(r.title)}</span>
+          <span class="stats-rank-count">${r.count}回</span>
+        </div>`).join('')
+    : '<p class="cal-empty-note">まだ献立に登録された記録がありません</p>';
+
+  el.innerHTML = `
+    <div class="usage-total">
+      <span class="usage-total-label">保存レシピ 品目総数</span>
+      <span class="usage-total-value">${stats.recipeCount}品</span>
+    </div>
+    <p class="tag-group-label" style="margin-top:18px;">人気のレシピランキング(献立登録回数順)</p>
+    <div class="stats-rank-list">${rankingHtml}</div>
   `;
 }
 

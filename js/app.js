@@ -82,6 +82,16 @@ async function loadTodayPlan() {
   }
 }
 
+// ヘッダーの「全n品」表示(③: バージョン表示の代わりに品目総数を出す)。
+async function loadItemCount() {
+  try {
+    const count = await api.getRecipeCount();
+    ui.setAppItemCount(count);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 async function refreshAll() {
   try {
     await loadCategories();
@@ -90,6 +100,7 @@ async function refreshAll() {
   }
   await loadRecipes();
   loadTodayPlan();
+  loadItemCount();
 }
 
 function filterActiveCount() {
@@ -210,6 +221,7 @@ async function handleDetailDelete() {
     ui.closeDetail();
     ui.toast('削除しました');
     await loadRecipes();
+    loadItemCount();
   } catch (err) {
     console.error(err);
     ui.toast('削除に失敗しました');
@@ -242,8 +254,7 @@ async function drawRandomRecipe({ avoidLastId }) {
 }
 
 function init() {
-  const versionEl = document.getElementById('app-version');
-  if (versionEl) versionEl.textContent = APP_VERSION;
+  ui.setMenuVersion(APP_VERSION); // ③: バージョン表示はヘッダーからメニューへ移動
 
   ui.initUI({
     onCardClick(id) {
@@ -351,6 +362,20 @@ function init() {
       }
     },
     onMenuUsageBack() {
+      ui.showMenuStep('main');
+    },
+    async onMenuStatsOpen() {
+      ui.showMenuStep('stats');
+      ui.showMenuStatsLoading();
+      try {
+        const stats = await api.getStats();
+        ui.renderMenuStats(stats);
+      } catch (err) {
+        console.error(err);
+        ui.showMenuStatsError('統計の取得に失敗しました');
+      }
+    },
+    onMenuStatsBack() {
       ui.showMenuStep('main');
     },
     onDetailOpenOriginal() {

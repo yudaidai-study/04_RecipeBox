@@ -23,6 +23,7 @@ const dayFilterBack = document.getElementById('day-filter-back');
 const dayFilterModeLabel = document.getElementById('day-filter-mode-label');
 const dayFilterConditions = document.getElementById('day-filter-conditions');
 const dayFilterCats = document.getElementById('day-filter-cats');
+const dayFilterFreeTagLabel = document.getElementById('day-filter-free-tag-label');
 const dayFilterFreeTagRow = document.getElementById('day-filter-free-tag-row');
 const dayFilterFreeTagInput = document.getElementById('day-filter-free-tag-input');
 const dayFilterRatingRow = document.getElementById('day-filter-rating-row');
@@ -53,6 +54,7 @@ const state = {
   activeDayKey: null,
   filterMode: null, // 'search' | 'random' | null
   filterCategoryIds: new Set(),
+  filterKeywords: new Set(), // ホームの検索画面と同じ料理名部分一致キーワード(検索モードのみ使用)
   filterMinRating: null,
   filterSortOrder: 'created', // 検索結果の並び順(⑪フィルタ画面と同じ選択肢)。デフォルトは最近追加した順
   lastSearchResults: [], // 検索結果クリック時にidから全情報を引くための一時キャッシュ
@@ -176,6 +178,7 @@ function formatDayTitle(key) {
 function closeDayFilterPanel() {
   state.filterMode = null;
   state.filterCategoryIds = new Set();
+  state.filterKeywords = new Set();
   state.filterMinRating = null;
   state.filterSortOrder = 'created';
   state.randomStep = 'pick';
@@ -216,7 +219,7 @@ async function ensureCategoriesLoaded() {
 
 function renderDayFilterConditions() {
   ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
-  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
+  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
   ui.renderRatingRow('day-filter-rating-row', state.filterMinRating);
   ui.renderSortRow('day-search-sort-row', state.filterSortOrder);
 }
@@ -230,6 +233,9 @@ async function openDayFilterPanel(mode) {
   state.randomCandidate = null;
   state.searchSelectedRecipe = null;
   dayFilterModeLabel.textContent = mode === 'search' ? '🔍 検索して追加' : '🎲 ランダムで追加';
+  // 検索モードのみ、ホームの検索画面と同じ「自由入力・キーワード検索」の見た目にする(検索結果画面は独自のままでよい)。
+  dayFilterFreeTagLabel.textContent = mode === 'search' ? '自由入力・キーワード検索' : '自由入力';
+  dayFilterFreeTagInput.placeholder = mode === 'search' ? 'タグ名または料理名の一部を入力してEnter' : 'タグ名で選択・入力';
   renderDayFilterConditions();
   dayFilterFreeTagInput.value = '';
   dayMainView.classList.add('hidden'); // フィルタより上の領域(献立一覧・追加ボタン)は隠す(⑫)
@@ -271,6 +277,7 @@ async function refreshDaySearchResults() {
       categoryIds: [...state.filterCategoryIds],
       minRating: state.filterMinRating,
       sortOrder: state.filterSortOrder,
+      keywords: [...state.filterKeywords],
     });
     state.lastSearchResults = recipes;
     state.searchSelectedRecipe = null;
@@ -423,30 +430,41 @@ dayFilterCats.addEventListener('click', (e) => {
   if (state.filterCategoryIds.has(id)) state.filterCategoryIds.delete(id);
   else state.filterCategoryIds.add(id);
   ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
-  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
+  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
 });
 
-// 自由入力タグ(⑪): 表示されているのは選択中のものだけなので、クリック=選択解除。
+// 自由入力タグ・キーワード(①⑪): 表示されているのは選択中のものだけなので、クリック=選択解除。
+// キーワードチップ(data-keyword)とタグチップ(data-id)を区別して扱う(ホームの検索画面と同じ)。
 dayFilterFreeTagRow.addEventListener('click', (e) => {
   const chip = e.target.closest('.cat-chip');
   if (!chip) return;
-  state.filterCategoryIds.delete(chip.dataset.id);
+  if (chip.dataset.keyword != null) {
+    state.filterKeywords.delete(chip.dataset.keyword);
+  } else {
+    state.filterCategoryIds.delete(chip.dataset.id);
+  }
   ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
-  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
+  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
 });
 
-// テキスト入力(①: プルダウンと一体化した単一のコンボボックス): 既存タグ名と完全一致した場合だけ選択に加える
-// (候補にない名前を打っても何も起きない)。
+// テキスト入力(①: プルダウンと一体化した単一のコンボボックス): 既存タグ名と完全一致すればタグとして選択する。
+// 検索モードのみ、一致しなければホームの検索画面と同じく料理名の部分一致キーワードとして追加する
+// (検索結果画面は独自のままでよいが、条件を選ぶこの画面はホームの検索画面と揃える)。
+// ランダムモードでは従来通り、一致しない入力は何も起きない(そのままだと抽選条件として使えないため)。
 function pickDayFreeTag(name) {
   const trimmed = name.trim();
+  if (!trimmed) return;
   const cat = state.categories.find((c) => !c.group_key && c.name === trimmed);
-  if (!cat) {
-    if (trimmed) toast('そのタグは見つかりませんでした');
+  if (cat) {
+    state.filterCategoryIds.add(cat.id);
+  } else if (state.filterMode === 'search') {
+    state.filterKeywords.add(trimmed);
+  } else {
+    toast('そのタグは見つかりませんでした');
     return;
   }
-  state.filterCategoryIds.add(cat.id);
   ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
-  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
+  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
   dayFilterFreeTagInput.value = '';
 }
 dayFilterFreeTagInput.addEventListener('change', () => pickDayFreeTag(dayFilterFreeTagInput.value));
@@ -487,6 +505,7 @@ daySearchResults.addEventListener('click', (e) => {
 
 daySearchClearBtn.addEventListener('click', () => {
   state.filterCategoryIds = new Set();
+  state.filterKeywords = new Set();
   state.filterMinRating = null;
   state.filterSortOrder = 'created';
   renderDayFilterConditions();
@@ -503,6 +522,7 @@ daySearchSortRow.addEventListener('click', (e) => {
 
 dayRandomClearBtn.addEventListener('click', () => {
   state.filterCategoryIds = new Set();
+  state.filterKeywords = new Set();
   state.filterMinRating = null;
   renderDayFilterConditions();
 });

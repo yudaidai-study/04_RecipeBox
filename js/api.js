@@ -366,3 +366,55 @@ export async function getUsageSummary() {
   if (error) throw error;
   return data;
 }
+
+/* ===== 統計(左下メニュー・ヘッダーの品目総数) ===== */
+
+// 保存レシピの総数。ヘッダーの「全n品」表示と統計画面の両方から使う軽量カウントクエリ。
+export async function getRecipeCount() {
+  assertReady();
+  const { count, error } = await supabase.from('recipes').select('id', { count: 'exact', head: true });
+  if (error) throw error;
+  return count ?? 0;
+}
+
+// 人気のレシピランキング(献立カレンダーへの登録回数が多い順)。PostgRESTはGROUP BY集計を
+// 直接扱えないため、meal_plan.recipe_idを全件取得してクライアント側で集計する
+// (個人利用アプリのため件数は少なく、この程度の集計は許容範囲)。
+export async function getStats() {
+  assertReady();
+  const recipeCount = await getRecipeCount();
+
+  const { data: planRows, error: planError } = await supabase
+    .from('meal_plan')
+    .select('recipe_id')
+    .not('recipe_id', 'is', null);
+  if (planError) throw planError;
+
+  const countsByRecipe = new Map();
+  for (const row of planRows || []) {
+    countsByRecipe.set(row.recipe_id, (countsByRecipe.get(row.recipe_id) || 0) + 1);
+  }
+  const topIds = [...countsByRecipe.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id]) => id);
+
+  let ranking = [];
+  if (topIds.length > 0) {
+    const { data: recipes, error: recipesError } = await supabase
+      .from('recipes')
+      .select('id, title, url, image_url')
+      .in('id', topIds);
+    if (recipesError) throw recipesError;
+    const recipesById = new Map(recipes.map((r) => [r.id, r]));
+    ranking = topIds
+      .map((id) => {
+        const r = recipesById.get(id);
+        if (!r) return null; // 削除済みのレシピはランキングから除外
+        return { id: r.id, title: r.title || r.url, image_url: r.image_url, count: countsByRecipe.get(id) };
+      })
+      .filter(Boolean);
+  }
+
+  return { recipeCount, ranking };
+}

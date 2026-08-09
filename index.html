@@ -19,7 +19,7 @@
     <header class="app-header">
       <div class="app-brand">
         <div class="brand-text">
-          <h1>レシピ箱 <span id="app-version" class="app-version"></span></h1>
+          <h1>レシピ箱 <span id="app-item-count" class="app-version"></span></h1>
           <p class="brand-sub">2人でつくる、我が家のレシピ帳</p>
         </div>
         <div class="header-actions">
@@ -244,15 +244,23 @@
       <div id="menu-step-main">
         <h2 style="margin:4px 0 16px; font-size:18px;">メニュー</h2>
         <div class="btn-row" style="flex-direction:column; gap:10px;">
+          <button id="menu-stats-btn" class="btn btn-secondary" type="button">📈 統計を見る</button>
           <button id="menu-usage-btn" class="btn btn-secondary" type="button">📊 DB使用容量を確認</button>
           <button id="menu-logout-btn" class="btn btn-danger" type="button">ログアウト</button>
         </div>
+        <p id="menu-version" class="menu-version"></p>
       </div>
 
       <div id="menu-step-usage" class="hidden">
         <button id="menu-usage-back" class="btn-text" type="button" style="padding:4px 0 14px;">◀ 戻る</button>
         <h2 style="margin:0 0 16px; font-size:18px;">DB使用容量</h2>
         <div id="menu-usage-content"></div>
+      </div>
+
+      <div id="menu-step-stats" class="hidden">
+        <button id="menu-stats-back" class="btn-text" type="button" style="padding:4px 0 14px;">◀ 戻る</button>
+        <h2 style="margin:0 0 16px; font-size:18px;">統計</h2>
+        <div id="menu-stats-content"></div>
       </div>
     </div>
   </div>
