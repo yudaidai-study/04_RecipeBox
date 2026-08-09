@@ -37,6 +37,8 @@
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  /* ダブルタップでの拡大を無効化する。ピンチズームは残るので拡大操作自体は可能(アクセシビリティ配慮)。 */
+  touch-action: manipulation;
 }
 
 html, body {
