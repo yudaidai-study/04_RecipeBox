@@ -21,7 +21,7 @@
 
 ### 2. データベースを作成
 
-**SQL Editor** を開き、[`0001_init.sql`](supabase/migrations/0001_init.sql) → [`0002_multi_tag_categories.sql`](supabase/migrations/0002_multi_tag_categories.sql) → [`0003_add_recipe_rating.sql`](supabase/migrations/0003_add_recipe_rating.sql) → [`0004_meal_plan.sql`](supabase/migrations/0004_meal_plan.sql) → [`0005_add_categories.sql`](supabase/migrations/0005_add_categories.sql) → [`0006_add_gohan_category.sql`](supabase/migrations/0006_add_gohan_category.sql) → [`0007_meal_plan_text_entry.sql`](supabase/migrations/0007_meal_plan_text_entry.sql) → [`0008_archive_toggle.sql`](supabase/migrations/0008_archive_toggle.sql) の順に貼り付けて実行する(0002はカテゴリを複数タグ選択方式にする変更、0003は5段階評価の追加、0004は献立カレンダー機能、0005・0006は固定カテゴリの追加、0007はレシピ登録なしのテキストのみの献立追加、0008はアーカイブ保存の選択制トグル。未実行のものだけ追加で実行すればよい)。
+**SQL Editor** を開き、[`0001_init.sql`](supabase/migrations/0001_init.sql) → [`0002_multi_tag_categories.sql`](supabase/migrations/0002_multi_tag_categories.sql) → [`0003_add_recipe_rating.sql`](supabase/migrations/0003_add_recipe_rating.sql) → [`0004_meal_plan.sql`](supabase/migrations/0004_meal_plan.sql) → [`0005_add_categories.sql`](supabase/migrations/0005_add_categories.sql) → [`0006_add_gohan_category.sql`](supabase/migrations/0006_add_gohan_category.sql) → [`0007_meal_plan_text_entry.sql`](supabase/migrations/0007_meal_plan_text_entry.sql) → [`0008_archive_toggle.sql`](supabase/migrations/0008_archive_toggle.sql) → [`0009_rename_categories.sql`](supabase/migrations/0009_rename_categories.sql) の順に貼り付けて実行する(0002はカテゴリを複数タグ選択方式にする変更、0003は5段階評価の追加、0004は献立カレンダー機能、0005・0006は固定カテゴリの追加、0007はレシピ登録なしのテキストのみの献立追加、0008はアーカイブ保存の選択制トグル、0009は固定カテゴリの名称変更(その他→他の国、ドリンク→他の区分、ご飯→ご飯物)。未実行のものだけ追加で実行すればよい)。
 
 ### 3. Edge Functionをデプロイ
 
