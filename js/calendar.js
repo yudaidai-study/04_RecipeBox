@@ -14,6 +14,8 @@ const dayMainView = document.getElementById('day-main-view');
 const dayTitle = document.getElementById('day-title');
 const dayEntries = document.getElementById('day-entries');
 
+const dayTextInput = document.getElementById('day-text-input');
+const dayTextAddBtn = document.getElementById('day-text-add-btn');
 const daySearchBtn = document.getElementById('day-search-btn');
 const dayRandomBtn = document.getElementById('day-random-btn');
 const dayFilterPanel = document.getElementById('day-filter-panel');
@@ -22,7 +24,6 @@ const dayFilterModeLabel = document.getElementById('day-filter-mode-label');
 const dayFilterConditions = document.getElementById('day-filter-conditions');
 const dayFilterCats = document.getElementById('day-filter-cats');
 const dayFilterFreeTagRow = document.getElementById('day-filter-free-tag-row');
-const dayFilterFreeTagSelect = document.getElementById('day-filter-free-tag-select');
 const dayFilterFreeTagInput = document.getElementById('day-filter-free-tag-input');
 const dayFilterRatingRow = document.getElementById('day-filter-rating-row');
 const daySearchSortGroup = document.getElementById('day-search-sort-group');
@@ -94,10 +95,12 @@ async function loadEntries(days) {
   state.entriesByDate = new Map();
   for (const row of rows) {
     const list = state.entriesByDate.get(row.date) || [];
+    // recipe_idが無い行はテキストのみの献立(②)。タイトルはnoteをそのまま使い、画像・リンク先は持たない。
+    const isTextOnly = !row.recipe_id;
     list.push({
       id: row.id,
       recipe_id: row.recipe_id,
-      title: row.recipes?.title || row.recipes?.url || '(削除済みのレシピ)',
+      title: isTextOnly ? row.note : (row.recipes?.title || row.recipes?.url || '(削除済みのレシピ)'),
       image_url: row.recipes?.image_url,
       url: row.recipes?.url,
     });
@@ -156,7 +159,7 @@ function renderDayEntries() {
   const entries = state.entriesByDate.get(state.activeDayKey) || [];
   dayEntries.innerHTML = entries.length
     ? entries.map((e) => `
-        <div class="day-entry" data-url="${escHtml(e.url || '')}">
+        <div class="day-entry ${e.url ? '' : 'no-link'}" data-url="${escHtml(e.url || '')}">
           <div class="thumb">${thumbHtml(e.image_url)}</div>
           <p class="title">${escHtml(e.title)}</p>
           <button type="button" class="icon-btn small" data-action="remove-entry" data-id="${escHtml(e.id)}" aria-label="削除" title="削除">${TRASH_ICON}</button>
@@ -191,6 +194,7 @@ function closeDayFilterPanel() {
 function openDay(key) {
   state.activeDayKey = key;
   dayTitle.textContent = formatDayTitle(key);
+  dayTextInput.value = '';
   renderDayEntries();
   closeDayFilterPanel();
   dayOverlay.classList.add('open');
@@ -334,6 +338,23 @@ async function addRecipeToDay(recipe) {
   }
 }
 
+// テキストのみの献立を追加する(②: 「魚を焼く」のようにレシピURLを保存しない献立)。
+async function addTextEntryToDay(note) {
+  try {
+    const added = await api.addMealPlanTextEntry(state.activeDayKey, note);
+    const list = state.entriesByDate.get(state.activeDayKey) || [];
+    list.push({ id: added.id, recipe_id: null, title: added.note, image_url: null, url: null });
+    state.entriesByDate.set(state.activeDayKey, list);
+    renderDayEntries();
+    renderGrid();
+    dayTextInput.value = '';
+    toast(`「${added.note}」を追加しました`);
+  } catch (err) {
+    console.error(err);
+    toast(err.message || '追加に失敗しました');
+  }
+}
+
 async function removeRecipeFromDay(entryId) {
   try {
     await api.removeMealPlanEntry(entryId);
@@ -379,6 +400,18 @@ dayEntries.addEventListener('click', (e) => {
   }
 });
 
+dayTextAddBtn.addEventListener('click', () => {
+  const v = dayTextInput.value.trim();
+  if (!v) return;
+  addTextEntryToDay(v);
+});
+dayTextInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    dayTextAddBtn.click();
+  }
+});
+
 daySearchBtn.addEventListener('click', () => openDayFilterPanel('search'));
 dayRandomBtn.addEventListener('click', () => openDayFilterPanel('random'));
 dayFilterBack.addEventListener('click', () => closeDayFilterPanel());
@@ -402,17 +435,8 @@ dayFilterFreeTagRow.addEventListener('click', (e) => {
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
 });
 
-// プルダウン選択(id直接指定)。
-dayFilterFreeTagSelect.addEventListener('change', () => {
-  const id = dayFilterFreeTagSelect.value;
-  if (!id) return;
-  state.filterCategoryIds.add(id);
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
-  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
-  dayFilterFreeTagSelect.value = '';
-});
-
-// テキスト入力: 既存タグ名と完全一致した場合だけ選択に加える(候補にない名前を打っても何も起きない)。
+// テキスト入力(①: プルダウンと一体化した単一のコンボボックス): 既存タグ名と完全一致した場合だけ選択に加える
+// (候補にない名前を打っても何も起きない)。
 function pickDayFreeTag(name) {
   const trimmed = name.trim();
   const cat = state.categories.find((c) => !c.group_key && c.name === trimmed);

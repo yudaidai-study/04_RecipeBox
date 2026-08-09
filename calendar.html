@@ -72,6 +72,11 @@
       <div id="day-main-view">
         <h2 id="day-title" style="margin:4px 0 16px; font-size:18px;"></h2>
         <div id="day-entries"></div>
+        <!-- レシピに登録するほどでもない献立をテキストだけで追加する(②: 例「魚を焼く」) -->
+        <div class="day-text-add-row">
+          <input type="text" id="day-text-input" placeholder="テキストで追加(例: 魚を焼く)" maxlength="60" autocomplete="off">
+          <button id="day-text-add-btn" class="btn btn-secondary" type="button">追加</button>
+        </div>
         <div class="day-add-actions">
           <button id="day-search-btn" class="btn btn-primary" type="button">🔍 検索して追加</button>
           <button id="day-random-btn" class="btn btn-primary" type="button">🎲 ランダムで追加</button>
@@ -94,9 +99,6 @@
           <div class="tag-group">
             <p class="tag-group-label">自由入力</p>
             <div class="tag-row" id="day-filter-free-tag-row"></div>
-            <select id="day-filter-free-tag-select" class="free-tag-picker-input">
-              <option value="">プルダウンから選ぶ…</option>
-            </select>
             <input type="text" id="day-filter-free-tag-input" class="free-tag-picker-input" list="day-filter-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
             <datalist id="day-filter-free-tag-suggestions"></datalist>
           </div>

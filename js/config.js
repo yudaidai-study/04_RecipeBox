@@ -8,4 +8,4 @@ export const LOGIN_EMAIL = 'ydd-okuno@docomo.ne.jp';
 // ▲▲▲ ここまで ▲▲▲
 
 // アプリのバージョン表示用。リリースのたびに更新する(sw.jsのCACHE名と揃えると分かりやすい)。
-export const APP_VERSION = 'v18';
+export const APP_VERSION = 'v19';

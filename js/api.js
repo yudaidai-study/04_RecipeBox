@@ -81,29 +81,63 @@ function sortRecipes(recipes, sortOrder) {
   return recipes;
 }
 
-export async function listRecipes({ categoryIds, minRating, sortOrder } = {}) {
+// keywords(①: フィルタ画面の自由入力欄でタグ名と一致しなかった語)は、
+// (a) タグ名の部分一致で該当するカテゴリを絞り込み条件に合流させる ことと
+// (b) 料理名(title)の部分一致 の両方でヒットさせる(「タグ検索+キーワード検索のどちらもヒット」)。
+// PostgRESTのor=構文の手書きエスケープは値に , ( ) 等が混じると壊れやすいため、
+// キーワードごとに素直なilikeクエリを発行してクライアント側でマージする。
+export async function listRecipes({ categoryIds, minRating, sortOrder, keywords } = {}) {
   assertReady();
-  const hasFilter = Array.isArray(categoryIds) && categoryIds.length > 0;
-  const relation = hasFilter ? 'recipe_categories!inner(category_id)' : 'recipe_categories(category_id)';
+  const baseCategoryIds = Array.isArray(categoryIds) ? categoryIds : [];
+  const kws = (Array.isArray(keywords) ? keywords : []).map((k) => (k || '').trim()).filter(Boolean);
 
-  let query = supabase
-    .from('recipes')
-    .select(`id, url, title, image_url, rating, fetch_status, created_at, ${relation}`)
-    .order('created_at', { ascending: false });
+  let keywordCategoryIds = [];
+  for (const kw of kws) {
+    const { data, error } = await supabase.from('categories').select('id').ilike('name', `%${kw}%`);
+    if (error) throw error;
+    keywordCategoryIds.push(...(data || []).map((c) => c.id));
+  }
 
-  if (hasFilter) query = query.in('recipe_categories.category_id', categoryIds);
-  if (minRating) query = query.gte('rating', minRating);
+  const effectiveCategoryIds = [...new Set([...baseCategoryIds, ...keywordCategoryIds])];
+  // カテゴリクエリを実行するのは「明示的なタグ選択がある」か「キーワードがタグ名にもヒットした」場合のみ。
+  // キーワードだけ指定してタグには一件もヒットしなかった場合は、絞り込みなし(全件)扱いにしない。
+  const runCategoryQuery = effectiveCategoryIds.length > 0 || (baseCategoryIds.length === 0 && kws.length === 0);
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return sortRecipes(dedupeById(data), sortOrder);
+  let results = [];
+  if (runCategoryQuery) {
+    const hasFilter = effectiveCategoryIds.length > 0;
+    const relation = hasFilter ? 'recipe_categories!inner(category_id)' : 'recipe_categories(category_id)';
+    let query = supabase
+      .from('recipes')
+      .select(`id, url, title, image_url, rating, fetch_status, created_at, ${relation}`)
+      .order('created_at', { ascending: false });
+    if (hasFilter) query = query.in('recipe_categories.category_id', effectiveCategoryIds);
+    if (minRating) query = query.gte('rating', minRating);
+    const { data, error } = await query;
+    if (error) throw error;
+    results = dedupeById(data);
+  }
+
+  // 料理名(title)の部分一致(①)。カテゴリ側の結果と合わせて重複除去する。
+  for (const kw of kws) {
+    let titleQuery = supabase
+      .from('recipes')
+      .select('id, url, title, image_url, rating, fetch_status, created_at, recipe_categories(category_id)')
+      .ilike('title', `%${kw}%`);
+    if (minRating) titleQuery = titleQuery.gte('rating', minRating);
+    const { data, error } = await titleQuery;
+    if (error) throw error;
+    results = dedupeById([...results, ...(data || [])]);
+  }
+
+  return sortRecipes(results, sortOrder);
 }
 
 export async function getRecipeDetail(id) {
   assertReady();
   const { data, error } = await supabase
     .from('recipes')
-    .select('id, url, title, image_url, excerpt, memo, raw_html, rating, fetch_status, created_at, recipe_categories(category_id)')
+    .select('id, url, title, image_url, excerpt, memo, raw_html, rating, fetch_status, archive_enabled, created_at, recipe_categories(category_id)')
     .eq('id', id)
     .single();
   if (error) throw error;
@@ -186,6 +220,37 @@ export async function checkLinkReachable(url) {
   }
 }
 
+// アーカイブ保存の選択制トグル(③)。
+// OFFにする場合はDB更新のみ(raw_htmlを削除して「保持しない」状態にする)。
+// ONにする場合はarchive-recipe Edge Functionを呼び、改めてページを取得してraw_htmlを保存する。
+export async function setArchiveEnabled(recipe, enabled) {
+  assertReady();
+  if (!enabled) {
+    const { error } = await supabase
+      .from('recipes')
+      .update({ archive_enabled: false, raw_html: null })
+      .eq('id', recipe.id);
+    if (error) throw error;
+    return { archive_enabled: false, raw_html: null };
+  }
+
+  const { data, error } = await supabase.functions.invoke('archive-recipe', {
+    body: { recipeId: recipe.id },
+  });
+  if (error) {
+    let message = 'アーカイブの取得に失敗しました。';
+    try {
+      const body = await error.context?.json?.();
+      if (body?.message) message = body.message;
+    } catch {
+      // レスポンス本文を読めない場合は既定メッセージのまま
+    }
+    throw new Error(message);
+  }
+  if (!data?.ok) throw new Error(data?.message || 'アーカイブの取得に失敗しました。');
+  return data.recipe;
+}
+
 export async function updateRating(id, rating) {
   assertReady();
   const { error } = await supabase.from('recipes').update({ rating }).eq('id', id);
@@ -224,7 +289,7 @@ export async function listMealPlan(fromKey, toKey) {
   assertReady();
   const { data, error } = await supabase
     .from('meal_plan')
-    .select('id, date, recipe_id, recipes(id, title, image_url, url)')
+    .select('id, date, recipe_id, note, recipes(id, title, image_url, url)')
     .gte('date', fromKey)
     .lte('date', toKey)
     .order('date', { ascending: true });
@@ -238,12 +303,26 @@ export async function addMealPlanEntry(dateKey, recipeId) {
   const { data, error } = await supabase
     .from('meal_plan')
     .insert({ date: dateKey, recipe_id: recipeId })
-    .select('id, date, recipe_id')
+    .select('id, date, recipe_id, note')
     .single();
   if (error) {
     if (error.code === '23505') return null;
     throw error;
   }
+  return data;
+}
+
+// レシピに紐付かないテキストのみの献立を登録する(②: 「魚を焼く」のような、レシピURLを保存しない献立)。
+export async function addMealPlanTextEntry(dateKey, note) {
+  assertReady();
+  const trimmed = (note || '').trim();
+  if (!trimmed) throw new Error('内容を入力してください');
+  const { data, error } = await supabase
+    .from('meal_plan')
+    .insert({ date: dateKey, recipe_id: null, note: trimmed })
+    .select('id, date, recipe_id, note')
+    .single();
+  if (error) throw error;
   return data;
 }
 

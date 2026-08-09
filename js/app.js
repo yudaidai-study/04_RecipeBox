@@ -11,10 +11,13 @@ const state = {
   activeCategoryIds: new Set(),
   activeMinRating: null,
   activeSortOrder: 'created', // 並び順。デフォルトは最近追加した順(=追加順)
+  // 自由入力欄でタグ名と一致しなかった語(①): 料理名の部分一致キーワードとして一覧に適用する
+  activeKeywords: new Set(),
   // フィルタポップアップを開いている間だけの下書き(「絞り込む」を押すまでactiveへ反映しない)
   filterDraftCategoryIds: new Set(),
   filterDraftMinRating: null,
   filterDraftSortOrder: 'created',
+  filterDraftKeywords: new Set(),
   detailRecipe: null,
   detailCategoryNames: [],
   // 編集ポップアップを開いている間だけの下書き(「保存する」を押すまでDBへ反映しない)
@@ -47,6 +50,7 @@ async function loadRecipes() {
       categoryIds: [...state.activeCategoryIds],
       minRating: state.activeMinRating,
       sortOrder: state.activeSortOrder,
+      keywords: [...state.activeKeywords],
     });
     if (recipes.length === 0) {
       ui.showState('empty');
@@ -61,6 +65,22 @@ async function loadRecipes() {
   }
 }
 
+// 今日の献立(④): ホーム画面ヘッダーに表示する、カレンダーに登録済みの今日分の献立。
+async function loadTodayPlan() {
+  try {
+    const key = dateKey(todayDate());
+    const rows = await api.listMealPlan(key, key);
+    const entries = rows.map((r) => ({
+      recipe_id: r.recipe_id,
+      title: r.recipe_id ? (r.recipes?.title || r.recipes?.url || '(削除済みのレシピ)') : r.note,
+      image_url: r.recipes?.image_url || null,
+    }));
+    ui.renderTodayPlan(entries);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 async function refreshAll() {
   try {
     await loadCategories();
@@ -68,10 +88,11 @@ async function refreshAll() {
     console.error(err);
   }
   await loadRecipes();
+  loadTodayPlan();
 }
 
 function filterActiveCount() {
-  return state.activeCategoryIds.size + (state.activeMinRating ? 1 : 0);
+  return state.activeCategoryIds.size + state.activeKeywords.size + (state.activeMinRating ? 1 : 0);
 }
 
 async function openDetail(id) {
@@ -160,6 +181,25 @@ async function checkOriginalLinkAndFallback(recipe) {
   }
 }
 
+// アーカイブ保存トグルの切り替え(③)。ONにする場合は再取得を伴うため、失敗時は元の状態のまま据え置く。
+async function handleToggleArchive() {
+  const recipe = state.detailRecipe;
+  if (!recipe) return;
+  const next = !recipe.archive_enabled;
+  ui.setArchiveToggleBusy(true);
+  try {
+    const result = await api.setArchiveEnabled(recipe, next);
+    state.detailRecipe = { ...recipe, ...result };
+    ui.renderDetail(state.detailRecipe, state.detailCategoryNames);
+    ui.toast(next ? 'アーカイブを保存するようにしました' : 'アーカイブを保存しない設定にしました');
+  } catch (err) {
+    console.error(err);
+    ui.toast(err.message || 'アーカイブ設定の変更に失敗しました');
+  } finally {
+    ui.setArchiveToggleBusy(false);
+  }
+}
+
 async function handleDetailDelete() {
   const recipe = state.detailRecipe;
   if (!recipe) return;
@@ -215,8 +255,9 @@ function init() {
       state.filterDraftCategoryIds = new Set(state.activeCategoryIds);
       state.filterDraftMinRating = state.activeMinRating;
       state.filterDraftSortOrder = state.activeSortOrder;
+      state.filterDraftKeywords = new Set(state.activeKeywords);
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
-      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
+      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds, [...state.filterDraftKeywords]);
       ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
       ui.renderSortRow('filter-sort-row', state.filterDraftSortOrder);
       ui.openFilterOverlay();
@@ -227,29 +268,27 @@ function init() {
     onFilterChipToggle(categoryId) {
       toggleCategoryId(state.filterDraftCategoryIds, categoryId);
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
-      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
+      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds, [...state.filterDraftKeywords]);
     },
-    // 自由入力タグの選択(⑪): プルダウン(id直接指定)とテキスト入力(既存タグ名と完全一致した場合だけ)の2通り。
-    onFilterFreeTagSelect(id) {
-      if (!id) return;
-      state.filterDraftCategoryIds.add(id);
-      ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
-      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
-      const select = document.getElementById('filter-free-tag-select');
-      if (select) select.value = '';
-    },
+    // 自由入力欄(①): テキストとプルダウンを一体化した1つのコンボボックス。既存タグ名と完全一致すればタグとして、
+    // 一致しなければ料理名の部分一致キーワードとして追加する(タグ検索・キーワード検索のどちらもヒットする)。
     onFilterFreeTagPick(name) {
       const trimmed = name.trim();
-      const cat = state.categories.find((c) => !c.group_key && c.name === trimmed);
+      if (!trimmed) return;
       const input = document.getElementById('filter-free-tag-input');
-      if (!cat) {
-        if (trimmed) ui.toast('そのタグは見つかりませんでした');
-        return;
+      const cat = state.categories.find((c) => !c.group_key && c.name === trimmed);
+      if (cat) {
+        state.filterDraftCategoryIds.add(cat.id);
+      } else {
+        state.filterDraftKeywords.add(trimmed);
       }
-      state.filterDraftCategoryIds.add(cat.id);
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
-      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
+      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds, [...state.filterDraftKeywords]);
       if (input) input.value = '';
+    },
+    onFilterKeywordRemove(keyword) {
+      state.filterDraftKeywords.delete(keyword);
+      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds, [...state.filterDraftKeywords]);
     },
     onFilterRatingSelect(value) {
       state.filterDraftMinRating = state.filterDraftMinRating === value ? null : value;
@@ -264,8 +303,9 @@ function init() {
       state.filterDraftCategoryIds.clear();
       state.filterDraftMinRating = null;
       state.filterDraftSortOrder = 'created';
+      state.filterDraftKeywords.clear();
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
-      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
+      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds, [...state.filterDraftKeywords]);
       ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
       ui.renderSortRow('filter-sort-row', state.filterDraftSortOrder);
     },
@@ -273,6 +313,7 @@ function init() {
       state.activeCategoryIds = new Set(state.filterDraftCategoryIds);
       state.activeMinRating = state.filterDraftMinRating;
       state.activeSortOrder = state.filterDraftSortOrder;
+      state.activeKeywords = new Set(state.filterDraftKeywords);
       ui.updateFilterBadge(filterActiveCount());
       ui.closeFilterOverlay();
       loadRecipes();
@@ -301,6 +342,9 @@ function init() {
       state.mealPlanTargetRecipeId = state.detailRecipe.id;
       ui.openMealPlanAddOverlay(dateKey(todayDate()));
     },
+    onDetailToggleArchive() {
+      handleToggleArchive();
+    },
     onRandomAddToPlan() {
       if (!state.randomRecipe) return;
       state.mealPlanTargetRecipeId = state.randomRecipe.id;
@@ -315,10 +359,14 @@ function init() {
         const added = await api.addMealPlanEntry(dateValue, state.mealPlanTargetRecipeId);
         ui.closeMealPlanAddOverlay();
         ui.toast(added ? '献立に追加しました' : 'その日にはすでに追加済みです');
+        if (added && dateValue === dateKey(todayDate())) loadTodayPlan(); // 今日の献立欄(④)にも反映
       } catch (err) {
         console.error(err);
         ui.toast('献立への追加に失敗しました');
       }
+    },
+    onTodayPlanItemClick(recipeId) {
+      openDetail(recipeId);
     },
     onDetailEdit() {
       const recipe = state.detailRecipe;
@@ -359,16 +407,6 @@ function init() {
       state.randomLastId = null;
       ui.renderRandomCats(state.categories, state.randomCategoryIds);
       ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
-    },
-    // 自由入力タグの選択(⑪): プルダウン(id直接指定)とテキスト入力(既存タグ名と完全一致した場合だけ)の2通り。
-    onRandomFreeTagSelect(id) {
-      if (!id) return;
-      state.randomCategoryIds.add(id);
-      state.randomLastId = null;
-      ui.renderRandomCats(state.categories, state.randomCategoryIds);
-      ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
-      const select = document.getElementById('random-free-tag-select');
-      if (select) select.value = '';
     },
     onRandomFreeTagPick(name) {
       const trimmed = name.trim();
