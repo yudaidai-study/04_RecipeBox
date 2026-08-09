@@ -83,13 +83,16 @@
         <button id="day-filter-back" class="btn-text" type="button" style="padding:4px 0 14px;">◀ 戻る</button>
         <h2 id="day-filter-mode-label" style="margin:0 0 14px; font-size:18px;"></h2>
 
-        <!-- 検索モードでは常時表示(条件を変えるたびに一覧が更新される)。ランダムモードでは「決める」ステップでのみ表示し、
-             結果が出たら隠す(今日は何作る?と同じ画面遷移にするため)。 -->
+        <!-- 検索・ランダムどちらも「条件を選ぶ」ステップでのみ表示し、確定(検索する/決める!)を押したら
+             隠して結果ステップへ遷移する(検索・ランダムで同じ画面遷移にするため)。 -->
         <div id="day-filter-conditions">
           <div id="day-filter-cats"></div>
           <div class="tag-group">
             <p class="tag-group-label">自由入力</p>
             <div class="tag-row" id="day-filter-free-tag-row"></div>
+            <select id="day-filter-free-tag-select" class="free-tag-picker-input">
+              <option value="">プルダウンから選ぶ…</option>
+            </select>
             <input type="text" id="day-filter-free-tag-input" class="free-tag-picker-input" list="day-filter-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
             <datalist id="day-filter-free-tag-suggestions"></datalist>
           </div>
@@ -99,13 +102,19 @@
           </div>
         </div>
 
+        <!-- 検索モードの「条件を選ぶ」ステップ専用ボタン -->
+        <div id="day-search-pick-actions" class="btn-row hidden" style="margin-top:18px;">
+          <button id="day-search-clear" class="btn btn-secondary" type="button">クリア</button>
+          <button id="day-search-confirm" class="btn btn-primary" type="button">検索</button>
+        </div>
+
         <!-- ランダムモードの「決める」ステップ専用ボタン(今日は何作る?のクリア/決める!と同じ) -->
         <div id="day-random-pick-actions" class="btn-row hidden" style="margin-top:18px;">
           <button id="day-random-clear" class="btn btn-secondary" type="button">クリア</button>
           <button id="day-random-confirm" class="btn btn-primary" type="button">決める!</button>
         </div>
 
-        <!-- 検索結果から1件選ぶと、その項目の直下に「レシピを見る」「献立に追加」が展開される(選択・展開はJS側でrenderする)。 -->
+        <!-- 検索結果は別画面(条件ステップは隠す)。1件選ぶと直下に「レシピを見る」「献立に追加」が展開される。 -->
         <div id="day-search-results" class="day-recipe-results hidden"></div>
 
         <div id="day-random-box" class="hidden">

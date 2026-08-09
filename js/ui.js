@@ -97,6 +97,8 @@ export function initUI(h) {
     if (!chip) return;
     handlers.onFilterChipToggle?.(chip.dataset.id);
   });
+  const filterFreeTagSelect = document.getElementById('filter-free-tag-select');
+  filterFreeTagSelect.addEventListener('change', () => handlers.onFilterFreeTagSelect?.(filterFreeTagSelect.value));
   const filterFreeTagInput = document.getElementById('filter-free-tag-input');
   filterFreeTagInput.addEventListener('change', () => handlers.onFilterFreeTagPick?.(filterFreeTagInput.value));
   filterFreeTagInput.addEventListener('keydown', (e) => {
@@ -138,7 +140,6 @@ export function initUI(h) {
     if (!btn) return;
     const action = btn.dataset.action;
     if (action === 'open-original') handlers.onDetailOpenOriginal?.();
-    if (action === 'delete') handlers.onDetailDelete?.();
     if (action === 'edit') handlers.onDetailEdit?.();
     if (action === 'add-to-plan') handlers.onDetailAddToPlan?.();
   });
@@ -195,6 +196,7 @@ export function initUI(h) {
     handlers.onEditNewTagAdd?.(name);
   });
   document.getElementById('edit-save').addEventListener('click', () => handlers.onEditSave?.());
+  document.getElementById('edit-delete').addEventListener('click', () => handlers.onEditDelete?.());
 
   document.getElementById('random-overlay').addEventListener('click', (e) => {
     if (e.target.id === 'random-overlay') closeRandomOverlay();
@@ -211,6 +213,8 @@ export function initUI(h) {
     if (!chip) return;
     handlers.onRandomCatSelect?.(chip.dataset.id || null);
   });
+  const randomFreeTagSelect = document.getElementById('random-free-tag-select');
+  randomFreeTagSelect.addEventListener('change', () => handlers.onRandomFreeTagSelect?.(randomFreeTagSelect.value));
   const randomFreeTagInput = document.getElementById('random-free-tag-input');
   randomFreeTagInput.addEventListener('change', () => handlers.onRandomFreeTagPick?.(randomFreeTagInput.value));
   randomFreeTagInput.addEventListener('keydown', (e) => {
@@ -284,7 +288,7 @@ export function renderCatGroups(containerId, categories, activeIds, opts) {
 }
 
 // フィルタ系画面(フィルタ・今日は何作る・カレンダー日別フィルタ)共通の自由入力タグ選択欄(⑪)。
-// 「選択中のタグだけをチップ表示」+「既存タグ名のみを候補にしたdatalist入力」の組み合わせ。
+// 「選択中のタグだけをチップ表示」+「既存タグ名のみを候補にしたプルダウン/datalist入力」の組み合わせ。
 // prefixは各画面のDOM id接頭辞("filter" / "random" / "day-filter")。
 export function renderFreeTagPicker(prefix, categories, activeIds) {
   const freeCats = categories.filter((c) => !c.group_key);
@@ -294,6 +298,11 @@ export function renderFreeTagPicker(prefix, categories, activeIds) {
     row.innerHTML = activeChips
       .map((c) => `<button type="button" class="cat-chip active" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
       .join('');
+  }
+  const select = document.getElementById(`${prefix}-free-tag-select`);
+  if (select) {
+    select.innerHTML = '<option value="">プルダウンから選ぶ…</option>'
+      + freeCats.map((c) => `<option value="${escHtml(c.id)}">${escHtml(c.name)}</option>`).join('');
   }
   const suggestions = document.getElementById(`${prefix}-free-tag-suggestions`);
   if (suggestions) {
@@ -351,7 +360,6 @@ export function renderDetail(recipe, categoryNames) {
         <button class="btn btn-primary" data-action="open-original" type="button">レシピを見る</button>
         <button class="btn btn-secondary" data-action="add-to-plan" type="button">献立に追加</button>
       </div>
-      <button class="btn btn-danger" data-action="delete" type="button">削除</button>
     </div>
     <div id="archive-frame-wrap" class="archive-frame-wrap hidden"></div>
   `;

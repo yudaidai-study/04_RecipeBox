@@ -124,6 +124,9 @@
         <div class="tag-group">
           <p class="tag-group-label">自由入力</p>
           <div class="tag-row" id="random-free-tag-row"></div>
+          <select id="random-free-tag-select" class="free-tag-picker-input">
+            <option value="">プルダウンから選ぶ…</option>
+          </select>
           <input type="text" id="random-free-tag-input" class="free-tag-picker-input" list="random-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
           <datalist id="random-free-tag-suggestions"></datalist>
         </div>
@@ -199,6 +202,7 @@
         <button id="edit-cancel" class="btn btn-secondary" type="button">キャンセル</button>
         <button id="edit-save" class="btn btn-primary" type="button">保存する</button>
       </div>
+      <button id="edit-delete" class="btn btn-danger" type="button" style="margin-top:10px;">削除</button>
     </div>
   </div>
 
@@ -216,6 +220,9 @@
       <div class="tag-group">
         <p class="tag-group-label">自由入力</p>
         <div class="tag-row" id="filter-free-tag-row"></div>
+        <select id="filter-free-tag-select" class="free-tag-picker-input">
+          <option value="">プルダウンから選ぶ…</option>
+        </select>
         <input type="text" id="filter-free-tag-input" class="free-tag-picker-input" list="filter-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
         <datalist id="filter-free-tag-suggestions"></datalist>
       </div>

@@ -22,8 +22,12 @@ const dayFilterModeLabel = document.getElementById('day-filter-mode-label');
 const dayFilterConditions = document.getElementById('day-filter-conditions');
 const dayFilterCats = document.getElementById('day-filter-cats');
 const dayFilterFreeTagRow = document.getElementById('day-filter-free-tag-row');
+const dayFilterFreeTagSelect = document.getElementById('day-filter-free-tag-select');
 const dayFilterFreeTagInput = document.getElementById('day-filter-free-tag-input');
 const dayFilterRatingRow = document.getElementById('day-filter-rating-row');
+const daySearchPickActions = document.getElementById('day-search-pick-actions');
+const daySearchClearBtn = document.getElementById('day-search-clear');
+const daySearchConfirmBtn = document.getElementById('day-search-confirm');
 const dayRandomPickActions = document.getElementById('day-random-pick-actions');
 const dayRandomClearBtn = document.getElementById('day-random-clear');
 const dayRandomConfirmBtn = document.getElementById('day-random-confirm');
@@ -172,6 +176,7 @@ function closeDayFilterPanel() {
   state.searchSelectedRecipe = null;
   dayFilterPanel.classList.add('hidden');
   dayFilterConditions.classList.add('hidden');
+  daySearchPickActions.classList.add('hidden');
   dayRandomPickActions.classList.add('hidden');
   daySearchResults.classList.add('hidden');
   dayRandomBox.classList.add('hidden');
@@ -201,23 +206,20 @@ async function ensureCategoriesLoaded() {
   }
 }
 
-// 検索モードは条件を変えるたびに一覧を引き直す(ライブ更新)。ランダムモードは今日は何作る?と同じく
-// 「決める!」を押すまで抽選しない(条件変更のたびに再抽選すると挙動が揃わないため)。
-function applyDayFilterChange() {
-  if (state.filterMode === 'search') refreshDaySearchResults();
-}
-
 function renderDayFilterConditions() {
   ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
   ui.renderRatingRow('day-filter-rating-row', state.filterMinRating);
 }
 
+// 検索・ランダムどちらも「条件を選ぶ」ステップから始まり、確定ボタン(検索する/決める!)を押すまでは
+// 検索も抽選もしない(条件を変えるたびに動くと今日は何作る?の挙動と揃わないため)。
 async function openDayFilterPanel(mode) {
   await ensureCategoriesLoaded();
   state.filterMode = mode;
   state.randomStep = 'pick';
   state.randomCandidate = null;
+  state.searchSelectedRecipe = null;
   dayFilterModeLabel.textContent = mode === 'search' ? '🔍 検索して追加' : '🎲 ランダムで追加';
   renderDayFilterConditions();
   dayFilterFreeTagInput.value = '';
@@ -225,17 +227,23 @@ async function openDayFilterPanel(mode) {
   dayFilterPanel.classList.remove('hidden');
   dayFilterConditions.classList.remove('hidden');
   dayFilterEmpty.classList.add('hidden');
+  daySearchResults.classList.add('hidden');
+  dayRandomBox.classList.add('hidden');
   if (mode === 'search') {
     dayRandomPickActions.classList.add('hidden');
-    dayRandomBox.classList.add('hidden');
-    daySearchResults.classList.remove('hidden');
-    await refreshDaySearchResults();
+    daySearchPickActions.classList.remove('hidden');
   } else {
-    // ランダムモードは「決める!」ステップから始める(今日は何作る?と同じ画面遷移)。
-    daySearchResults.classList.add('hidden');
-    dayRandomBox.classList.add('hidden');
+    daySearchPickActions.classList.add('hidden');
     dayRandomPickActions.classList.remove('hidden');
   }
+}
+
+// 「検索」を押した時点で結果ステップへ遷移し、条件UIを隠して検索結果一覧だけを表示する。
+async function confirmDaySearch() {
+  dayFilterConditions.classList.add('hidden');
+  daySearchPickActions.classList.add('hidden');
+  daySearchResults.classList.remove('hidden');
+  await refreshDaySearchResults();
 }
 
 // 「決める!」を押した時点で結果ステップへ遷移し、条件UIを隠して抽選結果だけを表示する。
@@ -376,7 +384,6 @@ dayFilterCats.addEventListener('click', (e) => {
   else state.filterCategoryIds.add(id);
   ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
-  applyDayFilterChange();
 });
 
 // 自由入力タグ(⑪): 表示されているのは選択中のものだけなので、クリック=選択解除。
@@ -386,10 +393,19 @@ dayFilterFreeTagRow.addEventListener('click', (e) => {
   state.filterCategoryIds.delete(chip.dataset.id);
   ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
-  applyDayFilterChange();
 });
 
-// 既存タグ名と完全一致した場合だけ選択に加える(候補にない名前を打っても何も起きない)。
+// プルダウン選択(id直接指定)。
+dayFilterFreeTagSelect.addEventListener('change', () => {
+  const id = dayFilterFreeTagSelect.value;
+  if (!id) return;
+  state.filterCategoryIds.add(id);
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
+  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
+  dayFilterFreeTagSelect.value = '';
+});
+
+// テキスト入力: 既存タグ名と完全一致した場合だけ選択に加える(候補にない名前を打っても何も起きない)。
 function pickDayFreeTag(name) {
   const trimmed = name.trim();
   const cat = state.categories.find((c) => !c.group_key && c.name === trimmed);
@@ -401,7 +417,6 @@ function pickDayFreeTag(name) {
   ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
   dayFilterFreeTagInput.value = '';
-  applyDayFilterChange();
 }
 dayFilterFreeTagInput.addEventListener('change', () => pickDayFreeTag(dayFilterFreeTagInput.value));
 dayFilterFreeTagInput.addEventListener('keydown', (e) => {
@@ -417,7 +432,6 @@ dayFilterRatingRow.addEventListener('click', (e) => {
   const value = Number(btn.dataset.value);
   state.filterMinRating = state.filterMinRating === value ? null : value;
   ui.renderRatingRow('day-filter-rating-row', state.filterMinRating);
-  applyDayFilterChange();
 });
 
 daySearchResults.addEventListener('click', (e) => {
@@ -439,6 +453,13 @@ daySearchResults.addEventListener('click', (e) => {
   state.searchSelectedRecipe = state.searchSelectedRecipe?.id === recipe.id ? null : recipe;
   renderSearchResultsList();
 });
+
+daySearchClearBtn.addEventListener('click', () => {
+  state.filterCategoryIds = new Set();
+  state.filterMinRating = null;
+  renderDayFilterConditions();
+});
+daySearchConfirmBtn.addEventListener('click', () => confirmDaySearch());
 
 dayRandomClearBtn.addEventListener('click', () => {
   state.filterCategoryIds = new Set();

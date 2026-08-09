@@ -226,7 +226,15 @@ function init() {
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
       ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
     },
-    // 自由入力タグのプルダウン選択(⑪): 既存タグ名と完全一致した場合だけ選択に加える。
+    // 自由入力タグの選択(⑪): プルダウン(id直接指定)とテキスト入力(既存タグ名と完全一致した場合だけ)の2通り。
+    onFilterFreeTagSelect(id) {
+      if (!id) return;
+      state.filterDraftCategoryIds.add(id);
+      ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
+      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
+      const select = document.getElementById('filter-free-tag-select');
+      if (select) select.value = '';
+    },
     onFilterFreeTagPick(name) {
       const trimmed = name.trim();
       const cat = state.categories.find((c) => !c.group_key && c.name === trimmed);
@@ -285,9 +293,6 @@ function init() {
       window.open(recipe.url, '_blank', 'noopener'); // クリック直後に開く(判定待ちにするとポップアップブロック対象になるため)
       checkOriginalLinkAndFallback(recipe);
     },
-    onDetailDelete() {
-      handleDetailDelete();
-    },
     onDetailAddToPlan() {
       if (!state.detailRecipe) return;
       state.mealPlanTargetRecipeId = state.detailRecipe.id;
@@ -337,6 +342,10 @@ function init() {
     onEditSave() {
       handleEditSave();
     },
+    onEditDelete() {
+      ui.closeEditOverlay();
+      handleDetailDelete();
+    },
     async onEditNewTagAdd(name) {
       handleEditNewTagAdd(name);
     },
@@ -346,7 +355,16 @@ function init() {
       ui.renderRandomCats(state.categories, state.randomCategoryIds);
       ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
     },
-    // 自由入力タグのプルダウン選択(⑪): 既存タグ名と完全一致した場合だけ選択に加える。
+    // 自由入力タグの選択(⑪): プルダウン(id直接指定)とテキスト入力(既存タグ名と完全一致した場合だけ)の2通り。
+    onRandomFreeTagSelect(id) {
+      if (!id) return;
+      state.randomCategoryIds.add(id);
+      state.randomLastId = null;
+      ui.renderRandomCats(state.categories, state.randomCategoryIds);
+      ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
+      const select = document.getElementById('random-free-tag-select');
+      if (select) select.value = '';
+    },
     onRandomFreeTagPick(name) {
       const trimmed = name.trim();
       const cat = state.categories.find((c) => !c.group_key && c.name === trimmed);
