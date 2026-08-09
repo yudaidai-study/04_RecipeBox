@@ -345,7 +345,7 @@ export function renderDetail(recipe, categoryNames) {
   const tagsHtml = (categoryNames || []).map((n) => `<span class="cat-tag">${escHtml(n)}</span>`).join('');
 
   document.getElementById('detail-content').innerHTML = `
-    <div class="detail-thumb">${thumbHtml(recipe.image_url)}</div>
+    <div class="detail-thumb" data-action="open-original" role="button" aria-label="レシピを見る">${thumbHtml(recipe.image_url)}</div>
     <h2 class="detail-title">${escHtml(recipe.title || recipe.url)}</h2>
     <div class="rating-stars lg">${starsHtml(recipe.rating, false)}</div>
     <div class="detail-meta">
