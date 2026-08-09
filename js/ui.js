@@ -249,9 +249,20 @@ export function initUI(h) {
   });
   document.getElementById('random-clear').addEventListener('click', () => handlers.onRandomClear?.());
   document.getElementById('random-confirm').addEventListener('click', () => handlers.onRandomConfirm?.());
-  document.getElementById('random-again').addEventListener('click', () => handlers.onRandomAgain?.());
-  document.getElementById('random-open').addEventListener('click', () => handlers.onRandomOpen?.());
-  document.getElementById('random-add-to-plan').addEventListener('click', () => handlers.onRandomAddToPlan?.());
+  // ランダム表示の結果(レシピ詳細画面と同じレイアウト、編集ボタンを含む)はrenderRandomResultで
+  // 動的に生成されるため、固定idではなくdata-actionで委譲する。
+  document.getElementById('random-result-content')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'open-original') handlers.onRandomOpen?.();
+    if (action === 'edit') handlers.onRandomEdit?.();
+    if (action === 'add-to-plan') handlers.onRandomAddToPlan?.();
+    if (action === 'again') handlers.onRandomAgain?.();
+  });
+
+  setupFreeTagDropdown('filter', (name) => handlers.onFilterFreeTagPick?.(name));
+  setupFreeTagDropdown('random', (name) => handlers.onRandomFreeTagPick?.(name));
 }
 
 /* ===== 一覧画面 ===== */
@@ -470,6 +481,51 @@ export function renderFreeTagPicker(prefix, categories, activeIds, keywords) {
   }
 }
 
+// 自由入力欄のドロップダウン(datalistはiOS Safari等で見た目のプルダウンが出ないことがあるため、
+// 同じ欄でクリック/入力するとタグ候補が開く自前のドロップダウンを併設する)。
+// prefixは各画面のDOM id接頭辞("filter" / "random" / "day-filter")。onPickはEnter確定時と同じ処理。
+// 画面(index.html/calendar.html)側に `${prefix}-free-tag-dropdown` の空divを用意しておく必要がある。
+const freeTagDropdownWired = new Set();
+export function setupFreeTagDropdown(prefix, onPick) {
+  if (freeTagDropdownWired.has(prefix)) return; // 二重初期化ガード(day-filterは検索/ランダムどちらでも同じ欄を使う)
+  const input = document.getElementById(`${prefix}-free-tag-input`);
+  const suggestions = document.getElementById(`${prefix}-free-tag-suggestions`);
+  const dropdown = document.getElementById(`${prefix}-free-tag-dropdown`);
+  if (!input || !suggestions || !dropdown) return;
+  freeTagDropdownWired.add(prefix);
+
+  function renderOptions() {
+    const q = input.value.trim().toLowerCase();
+    const names = [...suggestions.options]
+      .map((o) => o.value)
+      .filter((n) => !q || n.toLowerCase().includes(q))
+      .slice(0, 8);
+    if (names.length === 0) {
+      dropdown.classList.add('hidden');
+      dropdown.innerHTML = '';
+      return;
+    }
+    dropdown.innerHTML = names.map((n) => `<button type="button" class="combo-option">${escHtml(n)}</button>`).join('');
+    dropdown.classList.remove('hidden');
+  }
+
+  input.addEventListener('focus', renderOptions);
+  input.addEventListener('input', renderOptions);
+  // クリック確定はmousedownで行う(clickだと先にinputのblurが発火してドロップダウンが閉じてしまうため)。
+  dropdown.addEventListener('mousedown', (e) => {
+    const opt = e.target.closest('.combo-option');
+    if (!opt) return;
+    e.preventDefault();
+    const value = opt.textContent;
+    input.value = value;
+    dropdown.classList.add('hidden');
+    onPick(value);
+  });
+  input.addEventListener('blur', () => {
+    setTimeout(() => dropdown.classList.add('hidden'), 120);
+  });
+}
+
 export function renderRatingRow(containerId, minRating) {
   document.getElementById(containerId).innerHTML = ratingRowHtml(minRating);
 }
@@ -509,16 +565,16 @@ function archiveToggleHtml(enabled) {
     </button>`;
 }
 
-export function renderDetail(recipe, categoryNames) {
-  const dateStr = recipe.created_at ? new Date(recipe.created_at).toLocaleDateString('ja-JP') : '';
+// レシピ詳細・ランダム表示結果で共通の情報表示(サムネイル・タイトル・評価・タグ・URL・メモ)。
+// アーカイブトグルは詳細画面専用(showArchiveToggle=trueの時のみ)。
+function recipeBodyHtml(recipe, categoryNames, { showArchiveToggle = false, dateStr } = {}) {
   const tagsHtml = (categoryNames || []).map((n) => `<span class="cat-tag">${escHtml(n)}</span>`).join('');
-
-  document.getElementById('detail-content').innerHTML = `
+  return `
     <div class="detail-thumb" data-action="open-original" role="button" aria-label="レシピを見る">${thumbHtml(recipe.image_url)}</div>
     <h2 class="detail-title">${escHtml(recipe.title || recipe.url)}</h2>
     <div class="detail-rating-row">
       <div class="rating-stars lg">${starsHtml(recipe.rating, false)}</div>
-      ${archiveToggleHtml(recipe.archive_enabled)}
+      ${showArchiveToggle ? archiveToggleHtml(recipe.archive_enabled) : ''}
     </div>
     <div class="detail-meta">
       ${tagsHtml}
@@ -526,13 +582,24 @@ export function renderDetail(recipe, categoryNames) {
     </div>
     <p class="detail-url">${escHtml(recipe.url)}</p>
     ${recipe.memo ? `<div class="detail-memo">${escHtml(recipe.memo)}</div>` : ''}
-    <div class="detail-actions">
-      <div class="btn-row">
-        <button class="btn btn-secondary" data-action="edit" type="button">編集</button>
-        <button class="btn btn-secondary" data-action="open-original" type="button">レシピを見る</button>
-        <button class="btn btn-primary" data-action="add-to-plan" type="button">献立に追加</button>
-      </div>
-    </div>
+  `;
+}
+
+// 編集/レシピを見る/献立に追加の3ボタン行(詳細画面・ランダム結果で共通)。
+function recipeActionsHtml() {
+  return `
+    <div class="btn-row">
+      <button class="btn btn-secondary" data-action="edit" type="button">編集</button>
+      <button class="btn btn-secondary" data-action="open-original" type="button">レシピを見る</button>
+      <button class="btn btn-primary" data-action="add-to-plan" type="button">献立に追加</button>
+    </div>`;
+}
+
+export function renderDetail(recipe, categoryNames) {
+  const dateStr = recipe.created_at ? new Date(recipe.created_at).toLocaleDateString('ja-JP') : '';
+  document.getElementById('detail-content').innerHTML = `
+    ${recipeBodyHtml(recipe, categoryNames, { showArchiveToggle: true, dateStr })}
+    <div class="detail-actions">${recipeActionsHtml()}</div>
     <div id="archive-frame-wrap" class="archive-frame-wrap hidden"></div>
   `;
 }
@@ -651,12 +718,17 @@ export function showRandomStep(step) {
   });
 }
 
-export function renderRandomResult(recipe) {
-  document.getElementById('random-result-content').innerHTML = `
-    <div class="reveal-card">
-      <div class="thumb">${thumbHtml(recipe.image_url)}</div>
-      <div class="body"><p class="title">${escHtml(recipe.title || recipe.url)}</p></div>
-    </div>`;
+// ランダム表示の結果(レシピ詳細画面と同じレイアウト)。編集/レシピを見る/献立に追加の下に
+// 「もう一回」を配置する。ホーム(random-result-content)・カレンダーの日別ランダム追加
+// (day-random-content)のどちらからも同じ関数を使う。
+export function renderRandomResult(containerId, recipe, categoryNames) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = `
+    ${recipeBodyHtml(recipe, categoryNames)}
+    ${recipeActionsHtml()}
+    <button class="btn btn-secondary" data-action="again" type="button" style="margin-top:10px;">もう一回</button>
+  `;
 }
 
 /* ===== トースト ===== */

@@ -20,7 +20,11 @@ const state = {
   filterDraftKeywords: new Set(),
   detailRecipe: null,
   detailCategoryNames: [],
-  // 編集ポップアップを開いている間だけの下書き(「保存する」を押すまでDBへ反映しない)
+  // 編集ポップアップを開いている間だけの下書き(「保存する」を押すまでDBへ反映しない)。
+  // editTargetRecipe/editOriginは、詳細画面・ランダム表示結果のどちらから編集を開いたかを覚えておき、
+  // 保存後にどちらを再描画すべきか判定するために使う。
+  editTargetRecipe: null,
+  editOrigin: 'detail', // 'detail' | 'random'
   editDraftCategoryIds: new Set(),
   editDraftRating: null,
   // 献立に追加するレシピのid(詳細画面・今日は何作る結果画面のどちらから開いたかは問わない)
@@ -107,15 +111,20 @@ function filterActiveCount() {
   return state.activeCategoryIds.size + state.activeKeywords.size + (state.activeMinRating ? 1 : 0);
 }
 
+// レシピ詳細・ランダム表示結果で共通に使うタグ名解決(recipe_categories -> カテゴリ名の配列)。
+function categoryNamesFor(recipe) {
+  return (recipe.recipe_categories || [])
+    .map((rc) => state.categoriesById.get(rc.category_id)?.name)
+    .filter(Boolean);
+}
+
 async function openDetail(id) {
   ui.openDetail();
   ui.showDetailLoading();
   try {
     const recipe = await api.getRecipeDetail(id);
     state.detailRecipe = recipe;
-    const names = (recipe.recipe_categories || [])
-      .map((rc) => state.categoriesById.get(rc.category_id)?.name)
-      .filter(Boolean);
+    const names = categoryNamesFor(recipe);
     state.detailCategoryNames = names;
     ui.renderDetail(recipe, names);
   } catch (err) {
@@ -129,7 +138,7 @@ async function openDetail(id) {
 // 「保存する」を押した時点でまとめてDBへ反映する。メモはチップのような専用stateを持たず、
 // テキストエリア自体を下書きとして扱い、保存時にDOMから直接読む(add.jsのmemo-inputと同じ考え方)。
 async function handleEditSave() {
-  const recipe = state.detailRecipe;
+  const recipe = state.editTargetRecipe;
   if (!recipe) return;
   ui.setEditSaving(true);
   try {
@@ -139,7 +148,14 @@ async function handleEditSave() {
     if (memoInput) await api.updateMemo(recipe.id, memoInput.value.trim());
     ui.closeEditOverlay();
     ui.toast('更新しました');
-    await openDetail(recipe.id); // 詳細を再取得して反映
+    if (state.editOrigin === 'random') {
+      // ランダム表示結果からの編集(⑤の発展): 新しい抽選はせず、同じ結果を最新情報で再描画する。
+      const updated = await api.getRecipeDetail(recipe.id);
+      state.randomRecipe = updated;
+      ui.renderRandomResult('random-result-content', updated, categoryNamesFor(updated));
+    } else {
+      await openDetail(recipe.id); // 詳細を再取得して反映
+    }
     loadRecipes(); // 一覧側にも反映
   } catch (err) {
     console.error(err);
@@ -212,14 +228,18 @@ async function handleToggleArchive() {
   }
 }
 
-async function handleDetailDelete() {
-  const recipe = state.detailRecipe;
+// 詳細画面・ランダム表示結果のどちらの編集画面から削除しても対応できるよう、対象レシピを引数で受け取る。
+async function handleRecipeDelete(recipe) {
   if (!recipe) return;
   if (!confirm(`「${recipe.title || recipe.url}」を削除しますか?`)) return;
   try {
     await api.deleteRecipe(recipe.id);
-    ui.closeDetail();
     ui.toast('削除しました');
+    if (state.detailRecipe?.id === recipe.id) ui.closeDetail();
+    if (state.randomRecipe?.id === recipe.id) {
+      state.randomRecipe = null;
+      ui.closeRandomOverlay();
+    }
     await loadRecipes();
     loadItemCount();
   } catch (err) {
@@ -244,7 +264,7 @@ async function drawRandomRecipe({ avoidLastId }) {
     }
     state.randomRecipe = recipe;
     state.randomLastId = recipe.id;
-    ui.renderRandomResult(recipe);
+    ui.renderRandomResult('random-result-content', recipe, categoryNamesFor(recipe));
     ui.showRandomStep('result');
   } catch (err) {
     console.error(err);
@@ -418,6 +438,24 @@ function init() {
     onDetailEdit() {
       const recipe = state.detailRecipe;
       if (!recipe) return;
+      state.editTargetRecipe = recipe;
+      state.editOrigin = 'detail';
+      state.editDraftCategoryIds = new Set((recipe.recipe_categories || []).map((rc) => rc.category_id));
+      state.editDraftRating = recipe.rating;
+      ui.renderEditGroups(state.categories, state.editDraftCategoryIds);
+      ui.renderEditFreeTagSuggestions(state.categories);
+      ui.renderEditRating(state.editDraftRating);
+      ui.resetEditNewTagRow();
+      const memoInput = document.getElementById('edit-memo-input');
+      if (memoInput) memoInput.value = recipe.memo || '';
+      ui.openEditOverlay();
+    },
+    // ランダム表示結果の「編集」(⑤の発展): 詳細画面の編集と同じedit-overlayを共用する。
+    onRandomEdit() {
+      const recipe = state.randomRecipe;
+      if (!recipe) return;
+      state.editTargetRecipe = recipe;
+      state.editOrigin = 'random';
       state.editDraftCategoryIds = new Set((recipe.recipe_categories || []).map((rc) => rc.category_id));
       state.editDraftRating = recipe.rating;
       ui.renderEditGroups(state.categories, state.editDraftCategoryIds);
@@ -444,7 +482,7 @@ function init() {
     },
     onEditDelete() {
       ui.closeEditOverlay();
-      handleDetailDelete();
+      handleRecipeDelete(state.editTargetRecipe);
     },
     async onEditNewTagAdd(name) {
       handleEditNewTagAdd(name);

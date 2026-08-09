@@ -38,10 +38,23 @@ const dayRandomConfirmBtn = document.getElementById('day-random-confirm');
 const daySearchResults = document.getElementById('day-search-results');
 const dayRandomBox = document.getElementById('day-random-box');
 const dayRandomContent = document.getElementById('day-random-content');
-const dayRandomAgainBtn = document.getElementById('day-random-again');
-const dayRandomViewBtn = document.getElementById('day-random-view');
-const dayRandomAddBtn = document.getElementById('day-random-add');
 const dayFilterEmpty = document.getElementById('day-filter-empty');
+
+// レシピ編集(タグ・評価・メモ)。ランダム表示結果の「編集」ボタンから開く。index.htmlのedit-overlayと同じid構成。
+const editOverlay = document.getElementById('edit-overlay');
+const editClose = document.getElementById('edit-close');
+const editCancel = document.getElementById('edit-cancel');
+const editCatGroups = document.getElementById('edit-cat-groups');
+const editFreeTagRow = document.getElementById('edit-free-tag-row');
+const editRatingRow = document.getElementById('edit-rating-row');
+const editNewCatToggle = document.getElementById('edit-new-cat-toggle');
+const editNewCatToggleWrap = document.getElementById('edit-new-cat-toggle-wrap');
+const editNewCatRow = document.getElementById('edit-new-cat-row');
+const editNewCatInput = document.getElementById('edit-new-cat-input');
+const editNewCatAdd = document.getElementById('edit-new-cat-add');
+const editMemoInput = document.getElementById('edit-memo-input');
+const editSaveBtn = document.getElementById('edit-save');
+const editDeleteBtn = document.getElementById('edit-delete');
 
 const toastEl = document.getElementById('toast');
 
@@ -61,6 +74,14 @@ const state = {
   searchSelectedRecipe: null, // 検索結果から選択中の1件(⑯: レシピを見る/献立に追加の対象)
   randomStep: 'pick', // 'pick' | 'result'(今日は何作る?と同じ2段階の画面遷移)
   randomCandidate: null,
+  categoriesById: new Map(), // ランダム表示結果のタグ名解決・編集画面の候補表示用
+};
+
+// レシピ編集の下書き(「保存する」を押すまでDBへ反映しない)。編集対象はランダム表示結果のみ(⑤の発展)。
+const editState = {
+  targetRecipe: null,
+  draftCategoryIds: new Set(),
+  draftRating: null,
 };
 
 function escHtml(str) {
@@ -212,9 +233,17 @@ async function ensureCategoriesLoaded() {
   if (state.categories.length > 0) return;
   try {
     state.categories = await api.listCategories();
+    state.categoriesById = new Map(state.categories.map((c) => [c.id, c]));
   } catch (err) {
     console.error(err);
   }
+}
+
+// ランダム表示結果・編集画面で共通に使うタグ名解決(recipe_categories -> カテゴリ名の配列)。
+function categoryNamesFor(recipe) {
+  return (recipe.recipe_categories || [])
+    .map((rc) => state.categoriesById.get(rc.category_id)?.name)
+    .filter(Boolean);
 }
 
 function renderDayFilterConditions() {
@@ -315,9 +344,12 @@ async function drawDayRandomCandidate() {
     const recipe = await api.getRandomRecipe([...state.filterCategoryIds], state.filterMinRating);
     state.randomCandidate = recipe;
     dayFilterEmpty.classList.toggle('hidden', !!recipe);
-    dayRandomContent.innerHTML = recipe
-      ? `<div class="reveal-card"><div class="thumb">${thumbHtml(recipe.image_url)}</div><div class="body"><p class="title">${escHtml(recipe.title || recipe.url)}</p></div></div>`
-      : '';
+    // レシピ詳細画面と同じレイアウトで表示する(編集/レシピを見る/献立に追加/もう一回、⑤の発展)。
+    if (recipe) {
+      ui.renderRandomResult('day-random-content', recipe, categoryNamesFor(recipe));
+    } else {
+      dayRandomContent.innerHTML = '';
+    }
   } catch (err) {
     console.error(err);
     dayRandomContent.innerHTML = '';
@@ -528,13 +560,151 @@ dayRandomClearBtn.addEventListener('click', () => {
 });
 dayRandomConfirmBtn.addEventListener('click', () => confirmDayRandom());
 
-dayRandomAgainBtn.addEventListener('click', () => drawDayRandomCandidate());
-dayRandomViewBtn.addEventListener('click', () => {
-  if (state.randomCandidate) window.open(state.randomCandidate.url, '_blank', 'noopener');
+// ランダム表示結果(レシピ詳細画面と同じレイアウト、編集ボタンを含む)はrenderRandomResultで
+// 動的に生成されるため、固定idではなくdata-actionで委譲する(ホームのrandom-result-contentと同じ考え方)。
+dayRandomContent.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  if (action === 'open-original') {
+    if (state.randomCandidate) window.open(state.randomCandidate.url, '_blank', 'noopener');
+  }
+  if (action === 'add-to-plan') {
+    if (state.randomCandidate) addRecipeToDay(state.randomCandidate);
+  }
+  if (action === 'again') {
+    drawDayRandomCandidate();
+  }
+  if (action === 'edit') {
+    openDayEdit(state.randomCandidate);
+  }
 });
-dayRandomAddBtn.addEventListener('click', () => {
-  if (state.randomCandidate) addRecipeToDay(state.randomCandidate);
+
+/* ===== レシピ編集(タグ・評価・メモ)。ランダム表示結果の「編集」から開く ===== */
+
+function openDayEdit(recipe) {
+  if (!recipe) return;
+  editState.targetRecipe = recipe;
+  editState.draftCategoryIds = new Set((recipe.recipe_categories || []).map((rc) => rc.category_id));
+  editState.draftRating = recipe.rating;
+  ui.renderEditGroups(state.categories, editState.draftCategoryIds);
+  ui.renderEditFreeTagSuggestions(state.categories);
+  ui.renderEditRating(editState.draftRating);
+  ui.resetEditNewTagRow();
+  editMemoInput.value = recipe.memo || '';
+  ui.openEditOverlay();
+}
+
+async function handleDayEditSave() {
+  const recipe = editState.targetRecipe;
+  if (!recipe) return;
+  ui.setEditSaving(true);
+  try {
+    await api.updateRecipeCategories(recipe.id, [...editState.draftCategoryIds]);
+    await api.updateRating(recipe.id, editState.draftRating);
+    await api.updateMemo(recipe.id, editMemoInput.value.trim());
+    ui.closeEditOverlay();
+    toast('更新しました');
+    // 新しい抽選はせず、同じ結果を最新情報で再描画する(ホームのランダム表示結果編集と同じ考え方)。
+    const updated = await api.getRecipeDetail(recipe.id);
+    state.randomCandidate = updated;
+    ui.renderRandomResult('day-random-content', updated, categoryNamesFor(updated));
+  } catch (err) {
+    console.error(err);
+    toast('更新に失敗しました');
+  } finally {
+    ui.setEditSaving(false);
+  }
+}
+
+async function handleDayEditNewTagAdd(name) {
+  editNewCatAdd.disabled = true;
+  try {
+    const cat = await api.createCategory(name);
+    if (!state.categoriesById.has(cat.id)) {
+      state.categories.push(cat);
+      state.categoriesById.set(cat.id, cat);
+      ui.renderEditFreeTagSuggestions(state.categories);
+    }
+    editState.draftCategoryIds.add(cat.id);
+    ui.renderEditGroups(state.categories, editState.draftCategoryIds);
+    ui.resetEditNewTagRow();
+  } catch (err) {
+    console.error(err);
+    toast('タグの追加に失敗しました');
+  } finally {
+    editNewCatAdd.disabled = false;
+  }
+}
+
+async function handleDayEditDelete() {
+  const recipe = editState.targetRecipe;
+  if (!recipe) return;
+  if (!confirm(`「${recipe.title || recipe.url}」を削除しますか?`)) return;
+  try {
+    await api.deleteRecipe(recipe.id);
+    toast('削除しました');
+    state.randomCandidate = null;
+    closeDayFilterPanel();
+    await refresh(); // 献立(meal_plan)もcascadeで削除されるため、週の表示を最新化する
+  } catch (err) {
+    console.error(err);
+    toast('削除に失敗しました');
+  }
+}
+
+editClose.addEventListener('click', () => ui.closeEditOverlay());
+editCancel.addEventListener('click', () => ui.closeEditOverlay());
+editOverlay.addEventListener('click', (e) => {
+  if (e.target.id === 'edit-overlay') ui.closeEditOverlay();
 });
+editCatGroups.addEventListener('click', (e) => {
+  const chip = e.target.closest('.cat-chip');
+  if (!chip) return;
+  const id = chip.dataset.id;
+  if (editState.draftCategoryIds.has(id)) editState.draftCategoryIds.delete(id);
+  else editState.draftCategoryIds.add(id);
+  ui.renderEditGroups(state.categories, editState.draftCategoryIds);
+});
+// 自由入力タグ: 既に付与されているタグだけがチップとして並ぶ。クリックでON/OFFはfixedグループと同じ扱い。
+editFreeTagRow.addEventListener('click', (e) => {
+  const chip = e.target.closest('.cat-chip');
+  if (!chip) return;
+  const id = chip.dataset.id;
+  if (editState.draftCategoryIds.has(id)) editState.draftCategoryIds.delete(id);
+  else editState.draftCategoryIds.add(id);
+  ui.renderEditGroups(state.categories, editState.draftCategoryIds);
+});
+editRatingRow.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action="set-rating"]');
+  if (!btn) return;
+  const value = Number(btn.dataset.value);
+  editState.draftRating = editState.draftRating === value ? null : value; // 同じ星を再タップで評価解除
+  ui.renderEditRating(editState.draftRating);
+});
+editNewCatToggle.addEventListener('click', () => {
+  editNewCatToggleWrap.classList.add('hidden');
+  editNewCatRow.classList.remove('hidden');
+  editNewCatInput.focus();
+});
+editNewCatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    editNewCatAdd.click();
+  }
+});
+editNewCatAdd.addEventListener('click', () => {
+  const name = editNewCatInput.value.trim();
+  if (!name) return;
+  handleDayEditNewTagAdd(name);
+});
+editSaveBtn.addEventListener('click', () => handleDayEditSave());
+editDeleteBtn.addEventListener('click', () => {
+  ui.closeEditOverlay();
+  handleDayEditDelete();
+});
+
+ui.setupFreeTagDropdown('day-filter', (name) => pickDayFreeTag(name));
 
 // ホーム画面の「他の献立も見る」(④の発展)から ?date=YYYY-MM-DD 付きで開かれた場合、
 // その週を表示したうえで該当日の献立シートを自動で開く。
