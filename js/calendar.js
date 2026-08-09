@@ -131,7 +131,7 @@ function renderGrid() {
             <div class="thumb">${thumbHtml(e.image_url)}</div>
             <span class="title">${escHtml(e.title)}</span>
           </div>`).join('')
-      : '<p class="cal-day-empty">まだ未定</p>';
+      : '<p class="cal-day-empty">未定</p>';
     return `
       <button type="button" class="cal-day-row ${isToday ? 'today' : ''}" data-date="${key}">
         <div class="cal-day-label"><span class="wd">${WEEKDAY_JA[d.getDay()]}</span><span class="daynum">${d.getDate()}</span></div>

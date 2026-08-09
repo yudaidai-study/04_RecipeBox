@@ -52,8 +52,8 @@ function ratingRowHtml(minRating) {
 // 一覧の並び順(フィルタ画面専用)。値はapi.listRecipesのsortOrderにそのまま渡す。
 const SORT_OPTIONS = [
   { value: 'created', label: '最近追加した順' },
-  { value: 'title', label: '名称順' },
   { value: 'rating', label: '評価順' },
+  { value: 'title', label: '名称順' },
 ];
 
 function sortRowHtml(activeValue) {
