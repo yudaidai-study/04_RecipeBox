@@ -24,9 +24,14 @@ const dayFilterFreeTagRow = document.getElementById('day-filter-free-tag-row');
 const dayFilterFreeTagInput = document.getElementById('day-filter-free-tag-input');
 const dayFilterRatingRow = document.getElementById('day-filter-rating-row');
 const daySearchResults = document.getElementById('day-search-results');
+const daySearchSelected = document.getElementById('day-search-selected');
+const daySearchSelectedContent = document.getElementById('day-search-selected-content');
+const daySearchViewBtn = document.getElementById('day-search-view');
+const daySearchAddBtn = document.getElementById('day-search-add');
 const dayRandomBox = document.getElementById('day-random-box');
 const dayRandomContent = document.getElementById('day-random-content');
 const dayRandomAgainBtn = document.getElementById('day-random-again');
+const dayRandomViewBtn = document.getElementById('day-random-view');
 const dayRandomAddBtn = document.getElementById('day-random-add');
 const dayFilterEmpty = document.getElementById('day-filter-empty');
 
@@ -43,6 +48,7 @@ const state = {
   filterCategoryIds: new Set(),
   filterMinRating: null,
   lastSearchResults: [], // 検索結果クリック時にidから全情報を引くための一時キャッシュ
+  searchSelectedRecipe: null, // 検索結果から選択中の1件(⑯: レシピを見る/献立に追加の対象)
   randomCandidate: null,
 };
 
@@ -158,8 +164,10 @@ function closeDayFilterPanel() {
   state.filterCategoryIds = new Set();
   state.filterMinRating = null;
   state.randomCandidate = null;
+  state.searchSelectedRecipe = null;
   dayFilterPanel.classList.add('hidden');
   daySearchResults.classList.add('hidden');
+  daySearchSelected.classList.add('hidden');
   dayRandomBox.classList.add('hidden');
   dayFilterEmpty.classList.add('hidden');
   dayMainView.classList.remove('hidden'); // ステップ1(献立一覧)に戻す(⑫)
@@ -223,15 +231,33 @@ async function refreshDaySearchResults() {
       minRating: state.filterMinRating,
     });
     state.lastSearchResults = recipes;
+    state.searchSelectedRecipe = null;
+    daySearchSelected.classList.add('hidden');
     dayFilterEmpty.classList.toggle('hidden', recipes.length > 0);
+    // ホーム画面の一覧カードと同じく画像付きで表示する(⑮)
     daySearchResults.innerHTML = recipes.map((r) => `
       <button type="button" class="day-recipe-result" data-id="${escHtml(r.id)}">
+        <div class="thumb">${thumbHtml(r.image_url)}</div>
         <span class="title">${escHtml(r.title || r.url)}</span>
       </button>`).join('');
   } catch (err) {
     console.error(err);
     toast('検索に失敗しました');
   }
+}
+
+// 検索結果から1件選ぶと、その場でレシピを見る/献立に追加(日付選択なしで直接この日へ)ができるようにする(⑯)。
+function selectSearchResult(recipe) {
+  state.searchSelectedRecipe = recipe;
+  daySearchResults.querySelectorAll('.day-recipe-result').forEach((btn) => {
+    btn.classList.toggle('selected', btn.dataset.id === recipe.id);
+  });
+  daySearchSelectedContent.innerHTML = `
+    <div class="reveal-card">
+      <div class="thumb">${thumbHtml(recipe.image_url)}</div>
+      <div class="body"><p class="title">${escHtml(recipe.title || recipe.url)}</p></div>
+    </div>`;
+  daySearchSelected.classList.remove('hidden');
 }
 
 async function drawDayRandomCandidate() {
@@ -369,10 +395,19 @@ daySearchResults.addEventListener('click', (e) => {
   const btn = e.target.closest('.day-recipe-result');
   if (!btn) return;
   const recipe = state.lastSearchResults.find((r) => r.id === btn.dataset.id);
-  if (recipe) addRecipeToDay(recipe);
+  if (recipe) selectSearchResult(recipe);
+});
+daySearchViewBtn.addEventListener('click', () => {
+  if (state.searchSelectedRecipe) window.open(state.searchSelectedRecipe.url, '_blank', 'noopener');
+});
+daySearchAddBtn.addEventListener('click', () => {
+  if (state.searchSelectedRecipe) addRecipeToDay(state.searchSelectedRecipe);
 });
 
 dayRandomAgainBtn.addEventListener('click', () => drawDayRandomCandidate());
+dayRandomViewBtn.addEventListener('click', () => {
+  if (state.randomCandidate) window.open(state.randomCandidate.url, '_blank', 'noopener');
+});
 dayRandomAddBtn.addEventListener('click', () => {
   if (state.randomCandidate) addRecipeToDay(state.randomCandidate);
 });

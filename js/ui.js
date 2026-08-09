@@ -327,7 +327,7 @@ export function renderDetail(recipe, categoryNames) {
     <p class="detail-url">${escHtml(recipe.url)}</p>
     ${recipe.memo ? `<div class="detail-memo">${escHtml(recipe.memo)}</div>` : ''}
     <div class="detail-actions">
-      <button class="btn btn-primary" data-action="open-original" type="button">元のレシピを見る</button>
+      <button class="btn btn-primary" data-action="open-original" type="button">レシピを見る</button>
       <button class="btn btn-secondary" data-action="edit" type="button">編集</button>
       <button class="btn btn-secondary" data-action="add-to-plan" type="button">献立に追加</button>
       <button class="btn btn-danger" data-action="delete" type="button">削除</button>

@@ -541,8 +541,14 @@ main {
   background: var(--surface-1);
 }
 .field textarea { resize: vertical; min-height: 72px; }
-/* iOS Safariのネイティブ日付ピッカーはアイコン分の余白が足りないと右端が枠に食い込んで見切れるため、右パディングを広めに確保する(⑧) */
-.field input[type="date"] { padding-right: 36px; }
+/* iOS Safariのネイティブ日付ピッカーの右端が見切れる件(⑧⑭): 前回のpadding-right拡大だけでは直らなかったため、
+   UAデフォルトの見た目を外して自前のborder/背景に任せる(WebKitの内部レイアウト崩れを避ける定番の対処)。 */
+.field input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 36px;
+  min-width: 0;
+}
 
 .btn {
   width: 100%;
@@ -706,6 +712,8 @@ main {
 }
 
 /* フィルタ系画面(フィルタ・今日は何作る・カレンダー日別フィルタ)共通の自由入力タグ選択欄(⑪) */
+/* font-sizeは16px未満にしないこと(⑬): iOS Safariは16px未満の入力欄をタップすると自動で拡大表示し、
+   結果としてシート右端が見切れたように見えるため。 */
 .free-tag-picker-input {
   width: 100%;
   margin-top: 8px;
@@ -713,7 +721,7 @@ main {
   border-radius: var(--radius-sm);
   border: 1px solid var(--sep);
   background: var(--surface-2);
-  font-size: 14px;
+  font-size: 16px;
   min-height: 40px;
 }
 .free-tag-picker-input:focus {
@@ -874,11 +882,14 @@ main {
   max-height: 240px;
   overflow-y: auto;
 }
+/* 検索結果もホーム画面のカードと同じく画像付きで表示する(⑮) */
 .day-recipe-result {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   text-align: left;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: none;
   border-bottom: 1px solid var(--sep);
   background: var(--surface-1);
@@ -887,6 +898,22 @@ main {
 }
 .day-recipe-result:last-child { border-bottom: none; }
 .day-recipe-result:active { background: var(--surface-2); }
+.day-recipe-result.selected { background: var(--accent-soft); }
+.day-recipe-result .thumb {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+}
+.day-recipe-result .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.day-recipe-result .title { flex: 1; }
 
 .day-add-actions {
   display: grid;
