@@ -67,17 +67,29 @@
     <div class="sheet">
       <div class="sheet-handle"></div>
       <button class="sheet-close" id="day-close" aria-label="閉じる">✕</button>
-      <h2 id="day-title" style="margin:4px 0 16px; font-size:18px;"></h2>
 
-      <div id="day-entries"></div>
-
-      <div class="day-add-actions">
-        <button id="day-search-btn" class="btn btn-secondary" type="button">🔍 検索して追加</button>
-        <button id="day-random-btn" class="btn btn-secondary" type="button">🎲 ランダムで追加</button>
+      <!-- ステップ1: その日の献立一覧 -->
+      <div id="day-main-view">
+        <h2 id="day-title" style="margin:4px 0 16px; font-size:18px;"></h2>
+        <div id="day-entries"></div>
+        <div class="day-add-actions">
+          <button id="day-search-btn" class="btn btn-secondary" type="button">🔍 検索して追加</button>
+          <button id="day-random-btn" class="btn btn-secondary" type="button">🎲 ランダムで追加</button>
+        </div>
       </div>
 
+      <!-- ステップ2: 検索/ランダムの条件と結果(⑫: 一覧より上の領域は表示せず、モードが分かる見出しのみ出す) -->
       <div id="day-filter-panel" class="day-filter-panel hidden">
+        <button id="day-filter-back" class="btn-text" type="button" style="padding:4px 0 14px;">◀ 戻る</button>
+        <h2 id="day-filter-mode-label" style="margin:0 0 14px; font-size:18px;"></h2>
+
         <div id="day-filter-cats"></div>
+        <div class="tag-group">
+          <p class="tag-group-label">自由入力</p>
+          <div class="tag-row" id="day-filter-free-tag-row"></div>
+          <input type="text" id="day-filter-free-tag-input" class="free-tag-picker-input" list="day-filter-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
+          <datalist id="day-filter-free-tag-suggestions"></datalist>
+        </div>
         <div class="tag-group">
           <p class="tag-group-label">評価</p>
           <div id="day-filter-rating-row" class="rating-stars interactive"></div>

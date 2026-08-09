@@ -22,13 +22,15 @@ const CAT_GROUP_DEFS = [
   { key: 'free', label: '自由入力' },
 ];
 
-function groupedCatGroupsHtml(categories, activeIds) {
+// includeFree=falseだと自由入力グループを描画しない(⑨: 編集画面では自由入力を専用のチップ+追加欄で扱うため)。
+function groupedCatGroupsHtml(categories, activeIds, { includeFree = true } = {}) {
   const buckets = { genre: [], role: [], main_ingredient: [], free: [] };
   for (const c of categories) {
     const key = c.group_key && buckets[c.group_key] ? c.group_key : 'free';
     buckets[key].push(c);
   }
-  return CAT_GROUP_DEFS.map(({ key, label }) => {
+  const defs = includeFree ? CAT_GROUP_DEFS : CAT_GROUP_DEFS.filter((g) => g.key !== 'free');
+  return defs.map(({ key, label }) => {
     const chips = buckets[key]
       .map((c) => `<button type="button" class="cat-chip ${activeIds.has(c.id) ? 'active' : ''}" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
       .join('');
@@ -83,6 +85,20 @@ export function initUI(h) {
     if (!chip) return;
     handlers.onFilterChipToggle?.(chip.dataset.id);
   });
+  // 自由入力タグ(⑪): 表示されているのは選択中のものだけなので、クリック=選択解除。
+  document.getElementById('filter-free-tag-row').addEventListener('click', (e) => {
+    const chip = e.target.closest('.cat-chip');
+    if (!chip) return;
+    handlers.onFilterChipToggle?.(chip.dataset.id);
+  });
+  const filterFreeTagInput = document.getElementById('filter-free-tag-input');
+  filterFreeTagInput.addEventListener('change', () => handlers.onFilterFreeTagPick?.(filterFreeTagInput.value));
+  filterFreeTagInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handlers.onFilterFreeTagPick?.(filterFreeTagInput.value);
+    }
+  });
   document.getElementById('filter-rating-row').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action="set-min-rating"]');
     if (!btn) return;
@@ -134,10 +150,33 @@ export function initUI(h) {
     if (!chip) return;
     handlers.onEditChipToggle?.(chip.dataset.id);
   });
+  // 自由入力タグ(⑨): 既に付与されているタグだけがチップとして並ぶ。クリックでON/OFFはfixedグループと同じ扱い。
+  document.getElementById('edit-free-tag-row').addEventListener('click', (e) => {
+    const chip = e.target.closest('.cat-chip');
+    if (!chip) return;
+    handlers.onEditChipToggle?.(chip.dataset.id);
+  });
   document.getElementById('edit-rating-row').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action="set-rating"]');
     if (!btn) return;
     handlers.onEditRatingSelect?.(Number(btn.dataset.value));
+  });
+  document.getElementById('edit-new-cat-toggle').addEventListener('click', () => {
+    document.getElementById('edit-new-cat-toggle-wrap').classList.add('hidden');
+    document.getElementById('edit-new-cat-row').classList.remove('hidden');
+    document.getElementById('edit-new-cat-input').focus();
+  });
+  const editNewCatInput = document.getElementById('edit-new-cat-input');
+  editNewCatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('edit-new-cat-add').click();
+    }
+  });
+  document.getElementById('edit-new-cat-add').addEventListener('click', () => {
+    const name = editNewCatInput.value.trim();
+    if (!name) return;
+    handlers.onEditNewTagAdd?.(name);
   });
   document.getElementById('edit-save').addEventListener('click', () => handlers.onEditSave?.());
 
@@ -149,6 +188,20 @@ export function initUI(h) {
     const chip = e.target.closest('.cat-chip');
     if (!chip) return;
     handlers.onRandomCatSelect?.(chip.dataset.id || null);
+  });
+  // 自由入力タグ(⑪): 表示されているのは選択中のものだけなので、クリック=選択解除。
+  document.getElementById('random-free-tag-row').addEventListener('click', (e) => {
+    const chip = e.target.closest('.cat-chip');
+    if (!chip) return;
+    handlers.onRandomCatSelect?.(chip.dataset.id || null);
+  });
+  const randomFreeTagInput = document.getElementById('random-free-tag-input');
+  randomFreeTagInput.addEventListener('change', () => handlers.onRandomFreeTagPick?.(randomFreeTagInput.value));
+  randomFreeTagInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handlers.onRandomFreeTagPick?.(randomFreeTagInput.value);
+    }
   });
   document.getElementById('random-rating-row').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action="set-min-rating"]');
@@ -203,14 +256,33 @@ export function closeFilterOverlay() {
   document.getElementById('filter-overlay').classList.remove('open');
 }
 
+// 自由入力は下のrenderFreeTagPickerで別途扱うため、ここでは固定3グループのみ描画する(⑪)。
 export function renderFilterGroups(categories, activeIds) {
-  document.getElementById('filter-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds);
+  document.getElementById('filter-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds, { includeFree: false });
 }
 
 // containerIdを指定できる汎用版。献立カレンダーの日別フィルタ(⑦)など、
 // フィルタ画面以外の場所でも同じグループ分けチップUIを再利用するために切り出したもの。
-export function renderCatGroups(containerId, categories, activeIds) {
-  document.getElementById(containerId).innerHTML = groupedCatGroupsHtml(categories, activeIds);
+export function renderCatGroups(containerId, categories, activeIds, opts) {
+  document.getElementById(containerId).innerHTML = groupedCatGroupsHtml(categories, activeIds, opts);
+}
+
+// フィルタ系画面(フィルタ・今日は何作る・カレンダー日別フィルタ)共通の自由入力タグ選択欄(⑪)。
+// 「選択中のタグだけをチップ表示」+「既存タグ名のみを候補にしたdatalist入力」の組み合わせ。
+// prefixは各画面のDOM id接頭辞("filter" / "random" / "day-filter")。
+export function renderFreeTagPicker(prefix, categories, activeIds) {
+  const freeCats = categories.filter((c) => !c.group_key);
+  const activeChips = freeCats.filter((c) => activeIds.has(c.id));
+  const row = document.getElementById(`${prefix}-free-tag-row`);
+  if (row) {
+    row.innerHTML = activeChips
+      .map((c) => `<button type="button" class="cat-chip active" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
+      .join('');
+  }
+  const suggestions = document.getElementById(`${prefix}-free-tag-suggestions`);
+  if (suggestions) {
+    suggestions.innerHTML = freeCats.map((c) => `<option value="${escHtml(c.name)}"></option>`).join('');
+  }
 }
 
 export function renderRatingRow(containerId, minRating) {
@@ -286,8 +358,28 @@ export function closeEditOverlay() {
   document.getElementById('edit-overlay').classList.remove('open');
 }
 
+// 固定3グループ(ジャンル/料理区分/メイン)は従来通り全候補をチップ表示。
+// 自由入力は「もともと付与されているタグだけ」をチップ表示する(⑨)。新規追加はedit-new-cat-*で行う。
 export function renderEditGroups(categories, activeIds) {
-  document.getElementById('edit-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds);
+  document.getElementById('edit-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds, { includeFree: false });
+  const freeChips = categories.filter((c) => !c.group_key && activeIds.has(c.id));
+  document.getElementById('edit-free-tag-row').innerHTML = freeChips
+    .map((c) => `<button type="button" class="cat-chip active" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
+    .join('');
+}
+
+// 自由入力タグの新規追加欄(datalist)の候補を、既存の自由入力タグ名で埋める。
+export function renderEditFreeTagSuggestions(categories) {
+  const list = document.getElementById('edit-free-tag-suggestions');
+  if (!list) return;
+  list.innerHTML = categories.filter((c) => !c.group_key).map((c) => `<option value="${escHtml(c.name)}"></option>`).join('');
+}
+
+// 編集シートを開くたびに、前回開いたときの入力状態(タグ追加欄が開いたまま等)を初期状態に戻す。
+export function resetEditNewTagRow() {
+  document.getElementById('edit-new-cat-input').value = '';
+  document.getElementById('edit-new-cat-row').classList.add('hidden');
+  document.getElementById('edit-new-cat-toggle-wrap').classList.remove('hidden');
 }
 
 export function renderEditRating(rating) {
@@ -324,7 +416,7 @@ export function closeRandomOverlay() {
 }
 
 export function renderRandomCats(categories, activeIds) {
-  document.getElementById('random-cats').innerHTML = groupedCatGroupsHtml(categories, activeIds);
+  document.getElementById('random-cats').innerHTML = groupedCatGroupsHtml(categories, activeIds, { includeFree: false });
 }
 
 export function showRandomStep(step) {

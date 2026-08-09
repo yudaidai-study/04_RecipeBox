@@ -22,7 +22,8 @@ export function addDays(d, n) {
 
 export function startOfWeek(d) {
   const x = new Date(d);
-  x.setDate(x.getDate() - x.getDay()); // 週の始まりは日曜
+  const diff = (x.getDay() + 6) % 7; // 週の始まりは月曜(⑩): 月=0, 火=1, …, 日=6
+  x.setDate(x.getDate() - diff);
   x.setHours(0, 0, 0, 0);
   return x;
 }

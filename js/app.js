@@ -110,6 +110,30 @@ async function handleEditSave() {
   }
 }
 
+// 編集画面の自由入力タグ追加(⑨): 既存タグ名ならそれを、新規名なら新しいカテゴリを作って選択状態に加える。
+// レシピ追加画面(add.js)のnewCatAdd相当だが、保存は「保存する」ボタン押下時にまとめて行うため、
+// ここではeditDraftCategoryIdsへ加えるだけでDB更新はしない。
+async function handleEditNewTagAdd(name) {
+  const addBtn = document.getElementById('edit-new-cat-add');
+  addBtn.disabled = true;
+  try {
+    const cat = await api.createCategory(name);
+    if (!state.categoriesById.has(cat.id)) {
+      state.categories.push(cat);
+      state.categoriesById.set(cat.id, cat);
+      ui.renderEditFreeTagSuggestions(state.categories);
+    }
+    state.editDraftCategoryIds.add(cat.id);
+    ui.renderEditGroups(state.categories, state.editDraftCategoryIds);
+    ui.resetEditNewTagRow();
+  } catch (err) {
+    console.error(err);
+    ui.toast('タグの追加に失敗しました');
+  } finally {
+    addBtn.disabled = false;
+  }
+}
+
 // 「元のレシピを見る」を開いた後、非同期でリンク生死を判定する(③)。結果が遅れて届いても構わない設計。
 // 判定中に詳細シートが閉じられた/別レシピに切り替わった場合は結果を無視する。
 async function checkOriginalLinkAndFallback(recipe) {
@@ -185,6 +209,7 @@ function init() {
       state.filterDraftCategoryIds = new Set(state.activeCategoryIds);
       state.filterDraftMinRating = state.activeMinRating;
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
+      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
       ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
       ui.openFilterOverlay();
     },
@@ -194,6 +219,21 @@ function init() {
     onFilterChipToggle(categoryId) {
       toggleCategoryId(state.filterDraftCategoryIds, categoryId);
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
+      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
+    },
+    // 自由入力タグのプルダウン選択(⑪): 既存タグ名と完全一致した場合だけ選択に加える。
+    onFilterFreeTagPick(name) {
+      const trimmed = name.trim();
+      const cat = state.categories.find((c) => !c.group_key && c.name === trimmed);
+      const input = document.getElementById('filter-free-tag-input');
+      if (!cat) {
+        if (trimmed) ui.toast('そのタグは見つかりませんでした');
+        return;
+      }
+      state.filterDraftCategoryIds.add(cat.id);
+      ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
+      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
+      if (input) input.value = '';
     },
     onFilterRatingSelect(value) {
       state.filterDraftMinRating = state.filterDraftMinRating === value ? null : value;
@@ -203,6 +243,7 @@ function init() {
       state.filterDraftCategoryIds.clear();
       state.filterDraftMinRating = null;
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
+      ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
       ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
     },
     onFilterApply() {
@@ -217,6 +258,7 @@ function init() {
       state.randomMinRating = state.activeMinRating;
       state.randomLastId = null;
       ui.renderRandomCats(state.categories, state.randomCategoryIds);
+      ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
       ui.renderRatingRow('random-rating-row', state.randomMinRating);
       ui.showRandomStep('pick');
       ui.openRandomOverlay();
@@ -263,7 +305,9 @@ function init() {
       state.editDraftCategoryIds = new Set((recipe.recipe_categories || []).map((rc) => rc.category_id));
       state.editDraftRating = recipe.rating;
       ui.renderEditGroups(state.categories, state.editDraftCategoryIds);
+      ui.renderEditFreeTagSuggestions(state.categories);
       ui.renderEditRating(state.editDraftRating);
+      ui.resetEditNewTagRow();
       ui.openEditOverlay();
     },
     onEditClose() {
@@ -280,10 +324,29 @@ function init() {
     onEditSave() {
       handleEditSave();
     },
+    async onEditNewTagAdd(name) {
+      handleEditNewTagAdd(name);
+    },
     onRandomCatSelect(categoryId) {
       toggleCategoryId(state.randomCategoryIds, categoryId);
       state.randomLastId = null;
       ui.renderRandomCats(state.categories, state.randomCategoryIds);
+      ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
+    },
+    // 自由入力タグのプルダウン選択(⑪): 既存タグ名と完全一致した場合だけ選択に加える。
+    onRandomFreeTagPick(name) {
+      const trimmed = name.trim();
+      const cat = state.categories.find((c) => !c.group_key && c.name === trimmed);
+      const input = document.getElementById('random-free-tag-input');
+      if (!cat) {
+        if (trimmed) ui.toast('そのタグは見つかりませんでした');
+        return;
+      }
+      state.randomCategoryIds.add(cat.id);
+      state.randomLastId = null;
+      ui.renderRandomCats(state.categories, state.randomCategoryIds);
+      ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
+      if (input) input.value = '';
     },
     onRandomRatingSelect(value) {
       state.randomMinRating = state.randomMinRating === value ? null : value;
@@ -295,6 +358,7 @@ function init() {
       state.randomMinRating = null;
       state.randomLastId = null;
       ui.renderRandomCats(state.categories, state.randomCategoryIds);
+      ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
       ui.renderRatingRow('random-rating-row', state.randomMinRating);
     },
     onRandomConfirm() {

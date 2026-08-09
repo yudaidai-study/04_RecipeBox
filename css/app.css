@@ -541,6 +541,8 @@ main {
   background: var(--surface-1);
 }
 .field textarea { resize: vertical; min-height: 72px; }
+/* iOS Safariのネイティブ日付ピッカーはアイコン分の余白が足りないと右端が枠に食い込んで見切れるため、右パディングを広めに確保する(⑧) */
+.field input[type="date"] { padding-right: 36px; }
 
 .btn {
   width: 100%;
@@ -701,6 +703,23 @@ main {
   font-size: 12.5px;
   margin-bottom: 18px;
   font-weight: 600;
+}
+
+/* フィルタ系画面(フィルタ・今日は何作る・カレンダー日別フィルタ)共通の自由入力タグ選択欄(⑪) */
+.free-tag-picker-input {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--sep);
+  background: var(--surface-2);
+  font-size: 14px;
+  min-height: 40px;
+}
+.free-tag-picker-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  background: var(--surface-1);
 }
 
 .new-cat-row {

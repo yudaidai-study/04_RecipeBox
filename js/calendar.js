@@ -10,13 +10,18 @@ const calNext = document.getElementById('cal-next');
 
 const dayOverlay = document.getElementById('day-overlay');
 const dayClose = document.getElementById('day-close');
+const dayMainView = document.getElementById('day-main-view');
 const dayTitle = document.getElementById('day-title');
 const dayEntries = document.getElementById('day-entries');
 
 const daySearchBtn = document.getElementById('day-search-btn');
 const dayRandomBtn = document.getElementById('day-random-btn');
 const dayFilterPanel = document.getElementById('day-filter-panel');
+const dayFilterBack = document.getElementById('day-filter-back');
+const dayFilterModeLabel = document.getElementById('day-filter-mode-label');
 const dayFilterCats = document.getElementById('day-filter-cats');
+const dayFilterFreeTagRow = document.getElementById('day-filter-free-tag-row');
+const dayFilterFreeTagInput = document.getElementById('day-filter-free-tag-input');
 const dayFilterRatingRow = document.getElementById('day-filter-rating-row');
 const daySearchResults = document.getElementById('day-search-results');
 const dayRandomBox = document.getElementById('day-random-box');
@@ -157,6 +162,7 @@ function closeDayFilterPanel() {
   daySearchResults.classList.add('hidden');
   dayRandomBox.classList.add('hidden');
   dayFilterEmpty.classList.add('hidden');
+  dayMainView.classList.remove('hidden'); // ステップ1(献立一覧)に戻す(⑫)
 }
 
 function openDay(key) {
@@ -191,8 +197,12 @@ async function openDayFilterPanel(mode) {
   await ensureCategoriesLoaded();
   state.filterMode = mode;
   state.randomCandidate = null;
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds);
+  dayFilterModeLabel.textContent = mode === 'search' ? '🔍 検索して追加' : '🎲 ランダムで追加';
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
+  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
+  dayFilterFreeTagInput.value = '';
   ui.renderRatingRow('day-filter-rating-row', state.filterMinRating);
+  dayMainView.classList.add('hidden'); // フィルタより上の領域(献立一覧・追加ボタン)は隠す(⑫)
   dayFilterPanel.classList.remove('hidden');
   dayFilterEmpty.classList.add('hidden');
   if (mode === 'search') {
@@ -301,6 +311,7 @@ dayEntries.addEventListener('click', (e) => {
 
 daySearchBtn.addEventListener('click', () => openDayFilterPanel('search'));
 dayRandomBtn.addEventListener('click', () => openDayFilterPanel('random'));
+dayFilterBack.addEventListener('click', () => closeDayFilterPanel());
 
 dayFilterCats.addEventListener('click', (e) => {
   const chip = e.target.closest('.cat-chip');
@@ -308,8 +319,41 @@ dayFilterCats.addEventListener('click', (e) => {
   const id = chip.dataset.id;
   if (state.filterCategoryIds.has(id)) state.filterCategoryIds.delete(id);
   else state.filterCategoryIds.add(id);
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds);
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
+  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
   applyDayFilterChange();
+});
+
+// 自由入力タグ(⑪): 表示されているのは選択中のものだけなので、クリック=選択解除。
+dayFilterFreeTagRow.addEventListener('click', (e) => {
+  const chip = e.target.closest('.cat-chip');
+  if (!chip) return;
+  state.filterCategoryIds.delete(chip.dataset.id);
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
+  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
+  applyDayFilterChange();
+});
+
+// 既存タグ名と完全一致した場合だけ選択に加える(候補にない名前を打っても何も起きない)。
+function pickDayFreeTag(name) {
+  const trimmed = name.trim();
+  const cat = state.categories.find((c) => !c.group_key && c.name === trimmed);
+  if (!cat) {
+    if (trimmed) toast('そのタグは見つかりませんでした');
+    return;
+  }
+  state.filterCategoryIds.add(cat.id);
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
+  ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds);
+  dayFilterFreeTagInput.value = '';
+  applyDayFilterChange();
+}
+dayFilterFreeTagInput.addEventListener('change', () => pickDayFreeTag(dayFilterFreeTagInput.value));
+dayFilterFreeTagInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    pickDayFreeTag(dayFilterFreeTagInput.value);
+  }
 });
 
 dayFilterRatingRow.addEventListener('click', (e) => {
