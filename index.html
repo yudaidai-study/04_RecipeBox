@@ -18,16 +18,14 @@
   <div id="app">
     <header class="app-header">
       <div class="app-brand">
-        <svg class="brand-mark" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <rect width="36" height="36" rx="9" fill="rgba(255,255,255,0.18)"/>
-          <path d="M9 17h18a1 1 0 0 1 1 1 9 9 0 0 1-9 9h0a9 9 0 0 1-9-9 1 1 0 0 1 1-1Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M11 17c0-3 1.5-4.5 1.5-6M18 17c0-3.5 2-5 2-7.5M25 17c0-3 1.5-4.5 1.5-6" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
         <div class="brand-text">
           <h1>レシピ箱 <span id="app-version" class="app-version"></span></h1>
           <p class="brand-sub">2人でつくる、我が家のレシピ帳</p>
         </div>
         <div class="header-actions">
+          <button id="today-btn" class="icon-btn" aria-label="今日は何作る?" title="今日は何作る?">
+            <span class="dice-ico">🎲</span>
+          </button>
           <a href="./calendar.html" class="icon-btn" aria-label="献立カレンダー" title="献立カレンダー">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </a>
@@ -41,14 +39,12 @@
         </div>
       </div>
 
-      <button id="today-cta" class="today-cta" type="button">
-        <span class="dice">🎲</span>
-        <span class="today-cta-text">
-          <strong>今日は何作る?</strong>
-          <span>カテゴリからランダムに1品提案します</span>
-        </span>
-        <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
+      <!-- 今日の献立(④): 今日は何作る?のランダム提案は右上のアイコンへ移動し、ここには
+           カレンダーに登録済みの今日の献立を表示する。クリックでレシピ詳細に飛べる。 -->
+      <div id="today-plan" class="today-plan">
+        <p class="today-plan-label">今日の献立</p>
+        <div id="today-plan-list" class="today-plan-list"></div>
+      </div>
     </header>
 
     <main>
@@ -128,9 +124,6 @@
         <div class="tag-group">
           <p class="tag-group-label">自由入力</p>
           <div class="tag-row" id="random-free-tag-row"></div>
-          <select id="random-free-tag-select" class="free-tag-picker-input">
-            <option value="">プルダウンから選ぶ…</option>
-          </select>
           <input type="text" id="random-free-tag-input" class="free-tag-picker-input" list="random-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
           <datalist id="random-free-tag-suggestions"></datalist>
         </div>
@@ -222,12 +215,9 @@
       </div>
       <div id="filter-cat-groups"></div>
       <div class="tag-group">
-        <p class="tag-group-label">自由入力</p>
+        <p class="tag-group-label">自由入力・キーワード検索</p>
         <div class="tag-row" id="filter-free-tag-row"></div>
-        <select id="filter-free-tag-select" class="free-tag-picker-input">
-          <option value="">プルダウンから選ぶ…</option>
-        </select>
-        <input type="text" id="filter-free-tag-input" class="free-tag-picker-input" list="filter-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
+        <input type="text" id="filter-free-tag-input" class="free-tag-picker-input" list="filter-free-tag-suggestions" placeholder="タグ名または料理名の一部を入力してEnter" autocomplete="off">
         <datalist id="filter-free-tag-suggestions"></datalist>
       </div>
       <div class="tag-group">

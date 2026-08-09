@@ -177,55 +177,66 @@ img {
   text-align: center;
 }
 
-/* ===== 今日は何作る CTA ===== */
+/* ===== 今日の献立(④: 旧「今日は何作る」CTA。ランダム提案は右上のアイコンボタンへ移動) ===== */
 
-.today-cta {
-  margin-top: 12px;
-  width: 100%;
+.dice-ico { font-size: 17px; line-height: 1; }
+
+.today-plan {
+  margin-top: 14px;
+}
+.today-plan-label {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
+.today-plan-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+.today-plan-empty {
+  margin: 0;
+  padding: 9px 2px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+.today-plan-item {
+  flex-shrink: 0;
+  max-width: 220px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 11px 14px;
-  border-radius: var(--radius-md);
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  border-radius: var(--radius-pill);
   border: none;
   background: rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(6px);
   color: #fff;
-  text-align: left;
   cursor: pointer;
-  min-height: 44px;
+  min-height: 40px;
 }
-.today-cta:active { background: rgba(255, 255, 255, 0.26); }
-
-.today-cta .dice {
-  width: 36px;
-  height: 36px;
+.today-plan-item:active { background: rgba(255, 255, 255, 0.26); }
+.today-plan-item.not-clickable { cursor: default; }
+.today-plan-item .thumb {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
   border-radius: 50%;
-  background: #fff;
-  color: var(--accent);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  font-size: 18px;
-  box-shadow: var(--shadow-sm);
 }
-
-.today-cta .today-cta-text strong {
-  display: block;
-  font-size: 14.5px;
-  font-weight: 800;
-}
-.today-cta .today-cta-text span {
-  display: block;
-  font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.85);
-  margin-top: 1px;
-}
-
-.today-cta .chev {
-  margin-left: auto;
-  opacity: 0.8;
+.today-plan-item .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.today-plan-item .title {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ===== カテゴリチップ(フィルタ・今日は何作るで共用) ===== */
@@ -247,6 +258,11 @@ img {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+/* キーワードチップ(①: フィルタの自由入力で、タグ名に一致しなかった語=料理名の部分一致検索) */
+.cat-chip.keyword-chip.active {
+  background: var(--text-1);
+  border-color: var(--text-1);
 }
 
 /* ===== メイン・カードグリッド ===== */
@@ -603,6 +619,40 @@ main {
 .detail-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
 .detail-title { font-size: 18px; font-weight: 800; margin: 0 0 8px; line-height: 1.5; }
+
+/* 評価スターの右にアーカイブ保存トグルを並べる(③) */
+.detail-rating-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.detail-rating-row .rating-stars.lg { margin-bottom: 0; }
+
+.archive-toggle-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--sep);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.archive-toggle-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft);
+  color: var(--accent-2);
+}
+.archive-toggle-btn.busy { opacity: 0.6; }
+.archive-toggle-btn:disabled { cursor: default; }
+
 .detail-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 .detail-url { font-size: 12px; color: var(--text-2); word-break: break-all; margin-bottom: 16px; }
 .detail-memo { font-size: 13.5px; color: var(--text-1); background: var(--surface-2); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px; white-space: pre-wrap; }
@@ -864,6 +914,8 @@ main {
   cursor: pointer;
 }
 .day-entry:last-child { border-bottom: none; }
+/* テキストのみの献立(②)はリンク先が無いのでポインタにしない */
+.day-entry.no-link { cursor: default; }
 .day-entry .thumb {
   position: relative;
   width: 44px;
@@ -935,6 +987,33 @@ main {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-top: 18px;
+}
+
+/* レシピ登録なしのテキストのみの献立を追加する行(②) */
+.day-text-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.day-text-add-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--sep);
+  background: var(--surface-2);
+  font-size: 16px;
+  min-height: 44px;
+}
+.day-text-add-row input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  background: var(--surface-1);
+}
+.day-text-add-row button {
+  flex-shrink: 0;
+  padding: 0 18px;
+  min-height: 44px;
 }
 
 .day-filter-panel {

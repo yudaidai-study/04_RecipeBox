@@ -283,6 +283,9 @@ Deno.serve(async (req: Request) => {
 
     const page = await fetchPageSafely(parsed.href);
 
+    // アーカイブ(raw_html)は既定では保持しない(③: 選択制)。ページ取得自体はメタデータ抽出のために毎回行うが、
+    // 保存時点ではarchive_enabled=falseのままraw_htmlはnullにしておき、詳細画面のトグルをONにした時だけ
+    // archive-recipe Edge Functionが改めて取得・保存する。
     const { data, error } = await supabase
       .from('recipes')
       .insert({
@@ -291,7 +294,8 @@ Deno.serve(async (req: Request) => {
         title: page.title || parsed.hostname,
         image_url: page.imageUrl || null,
         excerpt: page.excerpt || null,
-        raw_html: page.ok ? page.html : null,
+        raw_html: null,
+        archive_enabled: false,
         fetch_status: page.ok ? 'ok' : 'failed',
         fetch_error: page.ok ? null : (page.error ?? null),
         rating: ratingValue,

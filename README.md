@@ -21,16 +21,17 @@
 
 ### 2. データベースを作成
 
-**SQL Editor** を開き、[`0001_init.sql`](supabase/migrations/0001_init.sql) → [`0002_multi_tag_categories.sql`](supabase/migrations/0002_multi_tag_categories.sql) → [`0003_add_recipe_rating.sql`](supabase/migrations/0003_add_recipe_rating.sql) → [`0004_meal_plan.sql`](supabase/migrations/0004_meal_plan.sql) → [`0005_add_categories.sql`](supabase/migrations/0005_add_categories.sql) → [`0006_add_gohan_category.sql`](supabase/migrations/0006_add_gohan_category.sql) の順に貼り付けて実行する(0002はカテゴリを複数タグ選択方式にする変更、0003は5段階評価の追加、0004は献立カレンダー機能、0005・0006は固定カテゴリの追加。未実行のものだけ追加で実行すればよい)。
+**SQL Editor** を開き、[`0001_init.sql`](supabase/migrations/0001_init.sql) → [`0002_multi_tag_categories.sql`](supabase/migrations/0002_multi_tag_categories.sql) → [`0003_add_recipe_rating.sql`](supabase/migrations/0003_add_recipe_rating.sql) → [`0004_meal_plan.sql`](supabase/migrations/0004_meal_plan.sql) → [`0005_add_categories.sql`](supabase/migrations/0005_add_categories.sql) → [`0006_add_gohan_category.sql`](supabase/migrations/0006_add_gohan_category.sql) → [`0007_meal_plan_text_entry.sql`](supabase/migrations/0007_meal_plan_text_entry.sql) → [`0008_archive_toggle.sql`](supabase/migrations/0008_archive_toggle.sql) の順に貼り付けて実行する(0002はカテゴリを複数タグ選択方式にする変更、0003は5段階評価の追加、0004は献立カレンダー機能、0005・0006は固定カテゴリの追加、0007はレシピ登録なしのテキストのみの献立追加、0008はアーカイブ保存の選択制トグル。未実行のものだけ追加で実行すればよい)。
 
 ### 3. Edge Functionをデプロイ
 
-**Edge Functions → Deploy a new function → Via Editor** で、以下2つの関数をそれぞれデプロイする。CLIやNode.jsのインストールは不要。
+**Edge Functions → Deploy a new function → Via Editor** で、以下3つの関数をそれぞれデプロイする。CLIやNode.jsのインストールは不要。
 
-- 関数名 `fetch-recipe`: [`supabase/functions/fetch-recipe/index.ts`](supabase/functions/fetch-recipe/index.ts)(URL保存時のページ取得・アーカイブ)
+- 関数名 `fetch-recipe`: [`supabase/functions/fetch-recipe/index.ts`](supabase/functions/fetch-recipe/index.ts)(URL保存時のページ取得。メタデータ抽出用にページ自体は毎回取得するが、0008適用後はアーカイブ本文(`raw_html`)は保存時点では保持しない)
 - 関数名 `check-link`: [`supabase/functions/check-link/index.ts`](supabase/functions/check-link/index.ts)(「元のレシピを見る」を開いた際、そのリンクが今も生きているかの判定。生きていなければ保存済みアーカイブを自動表示する)
+- 関数名 `archive-recipe`: [`supabase/functions/archive-recipe/index.ts`](supabase/functions/archive-recipe/index.ts)(レシピ詳細画面のアーカイブトグルをONにした時に、改めてページを取得してアーカイブを保存する)
 
-既にデプロイ済みの場合も、0002適用後は必ず最新の`fetch-recipe/index.ts`で再デプロイすること(カテゴリの受け渡し方法が`categoryId`単体から`categoryIds`配列に変わっているため)。
+既にデプロイ済みの場合も、0002適用後は必ず最新の`fetch-recipe/index.ts`で再デプロイすること(カテゴリの受け渡し方法が`categoryId`単体から`categoryIds`配列に変わっているため)。0008適用後は`fetch-recipe`もアーカイブを既定で保存しない挙動に変わるため、あわせて再デプロイすること。
 
 ### 4. アプリ側にSupabaseの接続情報を設定
 

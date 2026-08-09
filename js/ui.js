@@ -91,14 +91,17 @@ export function initUI(h) {
     if (!chip) return;
     handlers.onFilterChipToggle?.(chip.dataset.id);
   });
-  // 自由入力タグ(⑪): 表示されているのは選択中のものだけなので、クリック=選択解除。
+  // 自由入力タグ・キーワード(①⑪): 表示されているのは選択中のものだけなので、クリック=選択解除。
+  // キーワードチップ(data-keyword)とタグチップ(data-id)を区別して扱う。
   document.getElementById('filter-free-tag-row').addEventListener('click', (e) => {
     const chip = e.target.closest('.cat-chip');
     if (!chip) return;
+    if (chip.dataset.keyword != null) {
+      handlers.onFilterKeywordRemove?.(chip.dataset.keyword);
+      return;
+    }
     handlers.onFilterChipToggle?.(chip.dataset.id);
   });
-  const filterFreeTagSelect = document.getElementById('filter-free-tag-select');
-  filterFreeTagSelect.addEventListener('change', () => handlers.onFilterFreeTagSelect?.(filterFreeTagSelect.value));
   const filterFreeTagInput = document.getElementById('filter-free-tag-input');
   filterFreeTagInput.addEventListener('change', () => handlers.onFilterFreeTagPick?.(filterFreeTagInput.value));
   filterFreeTagInput.addEventListener('keydown', (e) => {
@@ -128,8 +131,14 @@ export function initUI(h) {
   });
 
   document.getElementById('retry-btn').addEventListener('click', () => handlers.onRetry?.());
-  document.getElementById('today-cta').addEventListener('click', () => handlers.onTodayCta?.());
+  document.getElementById('today-btn')?.addEventListener('click', () => handlers.onTodayCta?.());
   document.getElementById('logout-btn')?.addEventListener('click', () => handlers.onLogout?.());
+  // 今日の献立(④): レシピに紐付く項目だけクリックでレシピ詳細へ飛べる。
+  document.getElementById('today-plan-list')?.addEventListener('click', (e) => {
+    const item = e.target.closest('.today-plan-item[data-recipe-id]');
+    if (!item) return;
+    handlers.onTodayPlanItemClick?.(item.dataset.recipeId);
+  });
 
   document.getElementById('detail-overlay').addEventListener('click', (e) => {
     if (e.target.id === 'detail-overlay') closeDetail();
@@ -142,6 +151,7 @@ export function initUI(h) {
     if (action === 'open-original') handlers.onDetailOpenOriginal?.();
     if (action === 'edit') handlers.onDetailEdit?.();
     if (action === 'add-to-plan') handlers.onDetailAddToPlan?.();
+    if (action === 'toggle-archive') handlers.onDetailToggleArchive?.();
   });
 
   document.getElementById('mealplan-add-close').addEventListener('click', () => handlers.onMealPlanAddClose?.());
@@ -213,8 +223,6 @@ export function initUI(h) {
     if (!chip) return;
     handlers.onRandomCatSelect?.(chip.dataset.id || null);
   });
-  const randomFreeTagSelect = document.getElementById('random-free-tag-select');
-  randomFreeTagSelect.addEventListener('change', () => handlers.onRandomFreeTagSelect?.(randomFreeTagSelect.value));
   const randomFreeTagInput = document.getElementById('random-free-tag-input');
   randomFreeTagInput.addEventListener('change', () => handlers.onRandomFreeTagPick?.(randomFreeTagInput.value));
   randomFreeTagInput.addEventListener('keydown', (e) => {
@@ -266,6 +274,24 @@ export function renderRecipeGrid(recipes, categoriesById) {
   }).join('');
 }
 
+// 今日の献立(④)。recipe_idが付いている項目だけクリック可能にし、テキストのみの献立(②)は表示専用にする。
+export function renderTodayPlan(entries) {
+  const list = document.getElementById('today-plan-list');
+  if (!list) return;
+  if (!entries.length) {
+    list.innerHTML = '<p class="today-plan-empty">まだ決まっていません。🎲で決めましょう</p>';
+    return;
+  }
+  list.innerHTML = entries.map((e) => {
+    const clickable = !!e.recipe_id;
+    return `
+      <button type="button" class="today-plan-item ${clickable ? '' : 'not-clickable'}" ${clickable ? `data-recipe-id="${escHtml(e.recipe_id)}"` : 'disabled'}>
+        <span class="thumb">${thumbHtml(e.image_url)}</span>
+        <span class="title">${escHtml(e.title)}</span>
+      </button>`;
+  }).join('');
+}
+
 /* ===== フィルタ ===== */
 
 export function openFilterOverlay() {
@@ -288,21 +314,23 @@ export function renderCatGroups(containerId, categories, activeIds, opts) {
 }
 
 // フィルタ系画面(フィルタ・今日は何作る・カレンダー日別フィルタ)共通の自由入力タグ選択欄(⑪)。
-// 「選択中のタグだけをチップ表示」+「既存タグ名のみを候補にしたプルダウン/datalist入力」の組み合わせ。
+// テキスト入力+datalist(候補一覧)を一体化した1つのコンボボックスとして扱う(①: 従来のselectは廃止)。
+// 「選択中のタグだけをチップ表示」+「既存タグ名を候補にしたdatalist入力」の組み合わせ。
 // prefixは各画面のDOM id接頭辞("filter" / "random" / "day-filter")。
-export function renderFreeTagPicker(prefix, categories, activeIds) {
+// keywords(①: フィルタ画面のみ使用)は、既存タグ名と一致しなかった自由入力語を料理名の部分一致検索として
+// チップ表示するためのオプション配列。
+export function renderFreeTagPicker(prefix, categories, activeIds, keywords) {
   const freeCats = categories.filter((c) => !c.group_key);
   const activeChips = freeCats.filter((c) => activeIds.has(c.id));
   const row = document.getElementById(`${prefix}-free-tag-row`);
   if (row) {
-    row.innerHTML = activeChips
+    const tagChipsHtml = activeChips
       .map((c) => `<button type="button" class="cat-chip active" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
       .join('');
-  }
-  const select = document.getElementById(`${prefix}-free-tag-select`);
-  if (select) {
-    select.innerHTML = '<option value="">プルダウンから選ぶ…</option>'
-      + freeCats.map((c) => `<option value="${escHtml(c.id)}">${escHtml(c.name)}</option>`).join('');
+    const keywordChipsHtml = (keywords || [])
+      .map((k) => `<button type="button" class="cat-chip active keyword-chip" data-keyword="${escHtml(k)}">🔍 ${escHtml(k)}</button>`)
+      .join('');
+    row.innerHTML = tagChipsHtml + keywordChipsHtml;
   }
   const suggestions = document.getElementById(`${prefix}-free-tag-suggestions`);
   if (suggestions) {
@@ -340,6 +368,15 @@ export function showDetailLoading() {
   document.getElementById('detail-content').innerHTML = '<div class="loading-state"><span class="spin-emoji">🍳</span></div>';
 }
 
+// アーカイブトグル(③)の見た目。activeなら「保持する」設定であることが分かるスイッチ風の表示にする。
+const ARCHIVE_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><line x1="10" y1="13" x2="14" y2="13"/></svg>`;
+function archiveToggleHtml(enabled) {
+  return `
+    <button type="button" class="archive-toggle-btn ${enabled ? 'active' : ''}" data-action="toggle-archive" aria-pressed="${!!enabled}" title="リンク切れに備えてページのアーカイブを保存する">
+      ${ARCHIVE_ICON}<span>アーカイブ${enabled ? 'あり' : 'なし'}</span>
+    </button>`;
+}
+
 export function renderDetail(recipe, categoryNames) {
   const dateStr = recipe.created_at ? new Date(recipe.created_at).toLocaleDateString('ja-JP') : '';
   const tagsHtml = (categoryNames || []).map((n) => `<span class="cat-tag">${escHtml(n)}</span>`).join('');
@@ -347,7 +384,10 @@ export function renderDetail(recipe, categoryNames) {
   document.getElementById('detail-content').innerHTML = `
     <div class="detail-thumb" data-action="open-original" role="button" aria-label="レシピを見る">${thumbHtml(recipe.image_url)}</div>
     <h2 class="detail-title">${escHtml(recipe.title || recipe.url)}</h2>
-    <div class="rating-stars lg">${starsHtml(recipe.rating, false)}</div>
+    <div class="detail-rating-row">
+      <div class="rating-stars lg">${starsHtml(recipe.rating, false)}</div>
+      ${archiveToggleHtml(recipe.archive_enabled)}
+    </div>
     <div class="detail-meta">
       ${tagsHtml}
       ${dateStr ? `<span style="font-size:12px; color:var(--text-2);">${escHtml(dateStr)} 保存</span>` : ''}
@@ -363,6 +403,14 @@ export function renderDetail(recipe, categoryNames) {
     </div>
     <div id="archive-frame-wrap" class="archive-frame-wrap hidden"></div>
   `;
+}
+
+// アーカイブ取得中(トグルON時、Edge Functionでの再取得を待っている間)はボタンを無効化する(③)。
+export function setArchiveToggleBusy(isBusy) {
+  const btn = document.querySelector('#detail-content .archive-toggle-btn');
+  if (!btn) return;
+  btn.disabled = isBusy;
+  btn.classList.toggle('busy', isBusy);
 }
 
 /* ===== 献立に追加(日付選択) ===== */
