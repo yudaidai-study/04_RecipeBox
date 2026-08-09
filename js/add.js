@@ -17,8 +17,6 @@ const tagPicker = document.getElementById('tag-picker');
 const freeTagRow = document.getElementById('free-tag-row');
 const freeTagSuggestions = document.getElementById('free-tag-suggestions');
 
-const newCatToggle = document.getElementById('new-cat-toggle');
-const newCatToggleWrap = document.getElementById('new-cat-toggle-wrap');
 const newCatRow = document.getElementById('new-cat-row');
 const newCatInput = document.getElementById('new-cat-input');
 const newCatAdd = document.getElementById('new-cat-add');
@@ -142,12 +140,6 @@ tagPicker.addEventListener('click', (e) => {
   }
 });
 
-newCatToggle.addEventListener('click', () => {
-  newCatToggleWrap.classList.add('hidden');
-  newCatRow.classList.remove('hidden');
-  newCatInput.focus();
-});
-
 // プルダウン(datalist)候補を選んだ後や既存タグ名を入力した後、Enterでそのまま追加できるように。
 newCatInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
@@ -177,8 +169,6 @@ newCatAdd.addEventListener('click', async () => {
       chip.classList.add('active');
     }
     newCatInput.value = '';
-    newCatRow.classList.add('hidden');
-    newCatToggleWrap.classList.remove('hidden');
   } catch (err) {
     console.error(err);
     showError('カテゴリの追加に失敗しました');
