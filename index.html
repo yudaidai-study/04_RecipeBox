@@ -151,9 +151,9 @@
         <div id="random-result-content"></div>
         <div class="btn-row" style="margin-top:16px;">
           <button id="random-again" class="btn btn-secondary" type="button">もう一回</button>
-          <button id="random-open" class="btn btn-primary" type="button">レシピを見る</button>
+          <button id="random-open" class="btn btn-secondary" type="button">レシピを見る</button>
+          <button id="random-add-to-plan" class="btn btn-primary" type="button">献立に追加</button>
         </div>
-        <button id="random-add-to-plan" class="btn btn-secondary" type="button" style="margin-top:10px;">献立に追加</button>
       </div>
     </div>
   </div>
@@ -166,6 +166,7 @@
       <div class="field">
         <label for="mealplan-date-input">日付</label>
         <input id="mealplan-date-input" type="date">
+        <p id="mealplan-date-weekday" class="mealplan-date-weekday"></p>
       </div>
       <button id="mealplan-add-confirm" class="btn btn-primary" type="button">この日に追加する</button>
     </div>
@@ -207,16 +208,16 @@
       <div class="sheet-handle"></div>
       <button class="sheet-close" id="filter-close" aria-label="閉じる">✕</button>
       <h2 style="margin:4px 0 16px; font-size:18px;">フィルタ</h2>
+      <div class="tag-group">
+        <p class="tag-group-label">評価</p>
+        <div id="filter-rating-row" class="rating-stars interactive"></div>
+      </div>
       <div id="filter-cat-groups"></div>
       <div class="tag-group">
         <p class="tag-group-label">自由入力</p>
         <div class="tag-row" id="filter-free-tag-row"></div>
         <input type="text" id="filter-free-tag-input" class="free-tag-picker-input" list="filter-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
         <datalist id="filter-free-tag-suggestions"></datalist>
-      </div>
-      <div class="tag-group">
-        <p class="tag-group-label">評価</p>
-        <div id="filter-rating-row" class="rating-stars interactive"></div>
       </div>
       <div class="tag-group">
         <p class="tag-group-label">並び順</p>

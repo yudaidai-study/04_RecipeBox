@@ -62,13 +62,6 @@ function sortRowHtml(activeValue) {
     .join('');
 }
 
-function formatBytes(bytes) {
-  if (!bytes) return '';
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-}
-
 // interactive=trueだと評価入力用のボタン(タップで☆1〜5を選択、同じ星を再タップで解除)、
 // falseだと表示専用のspan(カード等での既評価の表示用)。
 function starsHtml(rating, interactive) {
@@ -158,6 +151,10 @@ export function initUI(h) {
     const dateValue = document.getElementById('mealplan-date-input').value;
     handlers.onMealPlanAddConfirm?.(dateValue);
   });
+  // 日付欄の下に曜日を添える。ネイティブの日付ピッカーで値を変えたときも追従させる。
+  const mealplanDateInput = document.getElementById('mealplan-date-input');
+  mealplanDateInput.addEventListener('input', updateMealPlanDateWeekday);
+  mealplanDateInput.addEventListener('change', updateMealPlanDateWeekday);
 
   document.getElementById('edit-close').addEventListener('click', () => handlers.onEditClose?.());
   document.getElementById('edit-cancel').addEventListener('click', () => handlers.onEditClose?.());
@@ -337,7 +334,6 @@ export function showDetailLoading() {
 export function renderDetail(recipe, categoryNames) {
   const dateStr = recipe.created_at ? new Date(recipe.created_at).toLocaleDateString('ja-JP') : '';
   const tagsHtml = (categoryNames || []).map((n) => `<span class="cat-tag">${escHtml(n)}</span>`).join('');
-  const sizeStr = recipe.raw_html ? formatBytes(new TextEncoder().encode(recipe.raw_html).length) : '';
 
   document.getElementById('detail-content').innerHTML = `
     <div class="detail-thumb">${thumbHtml(recipe.image_url)}</div>
@@ -345,14 +341,14 @@ export function renderDetail(recipe, categoryNames) {
     <div class="rating-stars lg">${starsHtml(recipe.rating, false)}</div>
     <div class="detail-meta">
       ${tagsHtml}
-      ${dateStr ? `<span style="font-size:12px; color:var(--text-2);">${escHtml(dateStr)} 保存${sizeStr ? ` ・ ${escHtml(sizeStr)}` : ''}</span>` : ''}
+      ${dateStr ? `<span style="font-size:12px; color:var(--text-2);">${escHtml(dateStr)} 保存</span>` : ''}
     </div>
     <p class="detail-url">${escHtml(recipe.url)}</p>
     ${recipe.memo ? `<div class="detail-memo">${escHtml(recipe.memo)}</div>` : ''}
     <div class="detail-actions">
       <button class="btn btn-primary" data-action="open-original" type="button">レシピを見る</button>
-      <button class="btn btn-secondary" data-action="edit" type="button">編集</button>
       <button class="btn btn-secondary" data-action="add-to-plan" type="button">献立に追加</button>
+      <button class="btn btn-secondary" data-action="edit" type="button">編集</button>
       <button class="btn btn-danger" data-action="delete" type="button">削除</button>
     </div>
     <div id="archive-frame-wrap" class="archive-frame-wrap hidden"></div>
@@ -361,9 +357,26 @@ export function renderDetail(recipe, categoryNames) {
 
 /* ===== 献立に追加(日付選択) ===== */
 
+const MEALPLAN_WEEKDAY_JA = ['日', '月', '火', '水', '木', '金', '土'];
+
+// 日付欄はネイティブUIなので曜日を表示できない。入力欄の下に「(月)」等を別途添える。
+function updateMealPlanDateWeekday() {
+  const input = document.getElementById('mealplan-date-input');
+  const label = document.getElementById('mealplan-date-weekday');
+  if (!input || !label) return;
+  if (!input.value) {
+    label.textContent = '';
+    return;
+  }
+  const [y, m, d] = input.value.split('-').map(Number);
+  const wd = MEALPLAN_WEEKDAY_JA[new Date(y, m - 1, d).getDay()];
+  label.textContent = `${y}/${m}/${d}(${wd})`;
+}
+
 export function openMealPlanAddOverlay(defaultDateKey) {
   const input = document.getElementById('mealplan-date-input');
   if (defaultDateKey) input.value = defaultDateKey;
+  updateMealPlanDateWeekday();
   document.getElementById('mealplan-add-overlay').classList.add('open');
 }
 

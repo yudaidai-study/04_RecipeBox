@@ -541,6 +541,7 @@ main {
   background: var(--surface-1);
 }
 .field textarea { resize: vertical; min-height: 72px; }
+.mealplan-date-weekday { margin: 6px 2px 0; font-size: 12.5px; font-weight: 700; color: var(--text-2); }
 /* iOS Safariのネイティブ日付ピッカーの右端が見切れる件(⑧⑭): 前回のpadding-right拡大だけでは直らなかったため、
    UAデフォルトの見た目を外して自前のborder/背景に任せる(WebKitの内部レイアウト崩れを避ける定番の対処)。 */
 .field input[type="date"] {
@@ -857,6 +858,7 @@ main {
   gap: 10px;
   padding: 8px 0;
   border-bottom: 1px solid var(--sep);
+  cursor: pointer;
 }
 .day-entry:last-child { border-bottom: none; }
 .day-entry .thumb {
@@ -879,7 +881,7 @@ main {
 
 .day-recipe-results {
   margin-top: 8px;
-  max-height: 240px;
+  max-height: 320px;
   overflow-y: auto;
 }
 /* 検索結果もホーム画面のカードと同じく画像付きで表示する(⑮) */
@@ -896,9 +898,19 @@ main {
   font-size: 13.5px;
   cursor: pointer;
 }
-.day-recipe-result:last-child { border-bottom: none; }
+.day-recipe-result-wrap:last-child .day-recipe-result:not(.selected) { border-bottom: none; }
 .day-recipe-result:active { background: var(--surface-2); }
-.day-recipe-result.selected { background: var(--accent-soft); }
+.day-recipe-result.selected { background: var(--accent-soft); border-bottom: none; }
+/* 選択中の1件の直下に「レシピを見る」「献立に追加」を展開する(⑯を検索結果一覧に統合) */
+.day-recipe-result-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px 14px;
+  border-bottom: 1px solid var(--sep);
+  background: var(--accent-soft);
+}
+.day-recipe-result-wrap:last-child .day-recipe-result-actions { border-bottom: none; }
+.day-recipe-result-actions .btn { padding: 10px; font-size: 13px; min-height: 38px; }
 .day-recipe-result .thumb {
   position: relative;
   width: 40px;

@@ -95,24 +95,16 @@
           <div id="day-filter-rating-row" class="rating-stars interactive"></div>
         </div>
 
+        <!-- 検索結果から1件選ぶと、その項目の直下に「レシピを見る」「献立に追加」が展開される(選択・展開はJS側でrenderする)。 -->
         <div id="day-search-results" class="day-recipe-results hidden"></div>
-
-        <!-- 検索結果から選んだ1件(⑯): 「レシピを見る」「献立に追加」を用意する。追加は日付選択を挟まずこの日に直接追加する。 -->
-        <div id="day-search-selected" class="hidden" style="margin-top:14px;">
-          <div id="day-search-selected-content"></div>
-          <div class="btn-row" style="margin-top:10px;">
-            <button id="day-search-view" class="btn btn-secondary" type="button">レシピを見る</button>
-            <button id="day-search-add" class="btn btn-primary" type="button">献立に追加</button>
-          </div>
-        </div>
 
         <div id="day-random-box" class="hidden">
           <div id="day-random-content"></div>
           <div class="btn-row" style="margin-top:10px;">
             <button id="day-random-again" class="btn btn-secondary" type="button">もう一回</button>
             <button id="day-random-view" class="btn btn-secondary" type="button">レシピを見る</button>
+            <button id="day-random-add" class="btn btn-primary" type="button">献立に追加</button>
           </div>
-          <button id="day-random-add" class="btn btn-primary" type="button" style="margin-top:10px;">献立に追加</button>
         </div>
 
         <p id="day-filter-empty" class="cal-empty-note hidden">条件に合うレシピが見つかりません</p>

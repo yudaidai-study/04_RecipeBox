@@ -24,10 +24,6 @@ const dayFilterFreeTagRow = document.getElementById('day-filter-free-tag-row');
 const dayFilterFreeTagInput = document.getElementById('day-filter-free-tag-input');
 const dayFilterRatingRow = document.getElementById('day-filter-rating-row');
 const daySearchResults = document.getElementById('day-search-results');
-const daySearchSelected = document.getElementById('day-search-selected');
-const daySearchSelectedContent = document.getElementById('day-search-selected-content');
-const daySearchViewBtn = document.getElementById('day-search-view');
-const daySearchAddBtn = document.getElementById('day-search-add');
 const dayRandomBox = document.getElementById('day-random-box');
 const dayRandomContent = document.getElementById('day-random-content');
 const dayRandomAgainBtn = document.getElementById('day-random-again');
@@ -141,14 +137,17 @@ async function refresh() {
   renderGrid();
 }
 
+const TRASH_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+
+// クリックでレシピを見られるようにし(id="day-entry")、✕は「削除」であることが分かるゴミ箱アイコンに変える。
 function renderDayEntries() {
   const entries = state.entriesByDate.get(state.activeDayKey) || [];
   dayEntries.innerHTML = entries.length
     ? entries.map((e) => `
-        <div class="day-entry">
+        <div class="day-entry" data-url="${escHtml(e.url || '')}">
           <div class="thumb">${thumbHtml(e.image_url)}</div>
           <p class="title">${escHtml(e.title)}</p>
-          <button type="button" class="icon-btn small" data-action="remove-entry" data-id="${escHtml(e.id)}" aria-label="この献立から外す">✕</button>
+          <button type="button" class="icon-btn small" data-action="remove-entry" data-id="${escHtml(e.id)}" aria-label="削除" title="削除">${TRASH_ICON}</button>
         </div>`).join('')
     : '<p class="cal-empty-note">まだ登録されていません</p>';
 }
@@ -167,7 +166,6 @@ function closeDayFilterPanel() {
   state.searchSelectedRecipe = null;
   dayFilterPanel.classList.add('hidden');
   daySearchResults.classList.add('hidden');
-  daySearchSelected.classList.add('hidden');
   dayRandomBox.classList.add('hidden');
   dayFilterEmpty.classList.add('hidden');
   dayMainView.classList.remove('hidden'); // ステップ1(献立一覧)に戻す(⑫)
@@ -232,32 +230,32 @@ async function refreshDaySearchResults() {
     });
     state.lastSearchResults = recipes;
     state.searchSelectedRecipe = null;
-    daySearchSelected.classList.add('hidden');
     dayFilterEmpty.classList.toggle('hidden', recipes.length > 0);
-    // ホーム画面の一覧カードと同じく画像付きで表示する(⑮)
-    daySearchResults.innerHTML = recipes.map((r) => `
-      <button type="button" class="day-recipe-result" data-id="${escHtml(r.id)}">
-        <div class="thumb">${thumbHtml(r.image_url)}</div>
-        <span class="title">${escHtml(r.title || r.url)}</span>
-      </button>`).join('');
+    renderSearchResultsList();
   } catch (err) {
     console.error(err);
     toast('検索に失敗しました');
   }
 }
 
-// 検索結果から1件選ぶと、その場でレシピを見る/献立に追加(日付選択なしで直接この日へ)ができるようにする(⑯)。
-function selectSearchResult(recipe) {
-  state.searchSelectedRecipe = recipe;
-  daySearchResults.querySelectorAll('.day-recipe-result').forEach((btn) => {
-    btn.classList.toggle('selected', btn.dataset.id === recipe.id);
-  });
-  daySearchSelectedContent.innerHTML = `
-    <div class="reveal-card">
-      <div class="thumb">${thumbHtml(recipe.image_url)}</div>
-      <div class="body"><p class="title">${escHtml(recipe.title || recipe.url)}</p></div>
-    </div>`;
-  daySearchSelected.classList.remove('hidden');
+// ホーム画面の一覧カードと同じく画像付きで表示する(⑮)。選択中の1件だけは、その行の直下に
+// 「レシピを見る」「献立に追加」ボタンを展開表示する(日付選択を挟まずこの日に直接追加できる)。
+function renderSearchResultsList() {
+  daySearchResults.innerHTML = state.lastSearchResults.map((r) => {
+    const isSelected = state.searchSelectedRecipe?.id === r.id;
+    return `
+      <div class="day-recipe-result-wrap">
+        <button type="button" class="day-recipe-result ${isSelected ? 'selected' : ''}" data-id="${escHtml(r.id)}">
+          <div class="thumb">${thumbHtml(r.image_url)}</div>
+          <span class="title">${escHtml(r.title || r.url)}</span>
+        </button>
+        ${isSelected ? `
+          <div class="day-recipe-result-actions">
+            <button type="button" class="btn btn-secondary" data-action="view-selected">レシピを見る</button>
+            <button type="button" class="btn btn-primary" data-action="add-selected">献立に追加</button>
+          </div>` : ''}
+      </div>`;
+  }).join('');
 }
 
 async function drawDayRandomCandidate() {
@@ -330,9 +328,15 @@ dayOverlay.addEventListener('click', (e) => {
 });
 
 dayEntries.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-action="remove-entry"]');
-  if (!btn) return;
-  removeRecipeFromDay(btn.dataset.id);
+  const removeBtn = e.target.closest('[data-action="remove-entry"]');
+  if (removeBtn) {
+    removeRecipeFromDay(removeBtn.dataset.id);
+    return;
+  }
+  const entry = e.target.closest('.day-entry');
+  if (entry?.dataset.url) {
+    window.open(entry.dataset.url, '_blank', 'noopener');
+  }
 });
 
 daySearchBtn.addEventListener('click', () => openDayFilterPanel('search'));
@@ -392,16 +396,23 @@ dayFilterRatingRow.addEventListener('click', (e) => {
 });
 
 daySearchResults.addEventListener('click', (e) => {
-  const btn = e.target.closest('.day-recipe-result');
-  if (!btn) return;
-  const recipe = state.lastSearchResults.find((r) => r.id === btn.dataset.id);
-  if (recipe) selectSearchResult(recipe);
-});
-daySearchViewBtn.addEventListener('click', () => {
-  if (state.searchSelectedRecipe) window.open(state.searchSelectedRecipe.url, '_blank', 'noopener');
-});
-daySearchAddBtn.addEventListener('click', () => {
-  if (state.searchSelectedRecipe) addRecipeToDay(state.searchSelectedRecipe);
+  const viewBtn = e.target.closest('[data-action="view-selected"]');
+  if (viewBtn) {
+    if (state.searchSelectedRecipe) window.open(state.searchSelectedRecipe.url, '_blank', 'noopener');
+    return;
+  }
+  const addBtn = e.target.closest('[data-action="add-selected"]');
+  if (addBtn) {
+    if (state.searchSelectedRecipe) addRecipeToDay(state.searchSelectedRecipe);
+    return;
+  }
+  const resultBtn = e.target.closest('.day-recipe-result');
+  if (!resultBtn) return;
+  const recipe = state.lastSearchResults.find((r) => r.id === resultBtn.dataset.id);
+  if (!recipe) return;
+  // 同じ項目をもう一度タップしたら閉じる(選択解除)。それ以外は選び直して直下に展開する。
+  state.searchSelectedRecipe = state.searchSelectedRecipe?.id === recipe.id ? null : recipe;
+  renderSearchResultsList();
 });
 
 dayRandomAgainBtn.addEventListener('click', () => drawDayRandomCandidate());
