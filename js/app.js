@@ -10,9 +10,11 @@ const state = {
   // 一覧に適用中(確定済み)のフィルタ
   activeCategoryIds: new Set(),
   activeMinRating: null,
+  activeSortOrder: 'created', // 並び順。デフォルトは最近追加した順(=追加順)
   // フィルタポップアップを開いている間だけの下書き(「絞り込む」を押すまでactiveへ反映しない)
   filterDraftCategoryIds: new Set(),
   filterDraftMinRating: null,
+  filterDraftSortOrder: 'created',
   detailRecipe: null,
   detailCategoryNames: [],
   // 編集ポップアップを開いている間だけの下書き(「保存する」を押すまでDBへ反映しない)
@@ -44,6 +46,7 @@ async function loadRecipes() {
     const recipes = await api.listRecipes({
       categoryIds: [...state.activeCategoryIds],
       minRating: state.activeMinRating,
+      sortOrder: state.activeSortOrder,
     });
     if (recipes.length === 0) {
       ui.showState('empty');
@@ -208,9 +211,11 @@ function init() {
     onFilterBtn() {
       state.filterDraftCategoryIds = new Set(state.activeCategoryIds);
       state.filterDraftMinRating = state.activeMinRating;
+      state.filterDraftSortOrder = state.activeSortOrder;
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
       ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
       ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
+      ui.renderSortRow(state.filterDraftSortOrder);
       ui.openFilterOverlay();
     },
     onFilterClose() {
@@ -239,16 +244,24 @@ function init() {
       state.filterDraftMinRating = state.filterDraftMinRating === value ? null : value;
       ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
     },
+    // 並び順は常にどれか1つが選ばれている状態(トグルではなく選択)。
+    onFilterSortSelect(value) {
+      state.filterDraftSortOrder = value;
+      ui.renderSortRow(state.filterDraftSortOrder);
+    },
     onFilterClear() {
       state.filterDraftCategoryIds.clear();
       state.filterDraftMinRating = null;
+      state.filterDraftSortOrder = 'created';
       ui.renderFilterGroups(state.categories, state.filterDraftCategoryIds);
       ui.renderFreeTagPicker('filter', state.categories, state.filterDraftCategoryIds);
       ui.renderRatingRow('filter-rating-row', state.filterDraftMinRating);
+      ui.renderSortRow(state.filterDraftSortOrder);
     },
     onFilterApply() {
       state.activeCategoryIds = new Set(state.filterDraftCategoryIds);
       state.activeMinRating = state.filterDraftMinRating;
+      state.activeSortOrder = state.filterDraftSortOrder;
       ui.updateFilterBadge(filterActiveCount());
       ui.closeFilterOverlay();
       loadRecipes();

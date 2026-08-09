@@ -68,7 +68,20 @@ export async function createCategory(name) {
   return data;
 }
 
-export async function listRecipes({ categoryIds, minRating } = {}) {
+// 並び順(フィルタ画面の「並び順」)。'created'(デフォルト・最近追加した順)はDB取得時のorderで既に
+// 満たされているのでそのまま、'title'/'rating'はDBの照合順序(日本語のあいうえお順とはズレる)に頼らず
+// カテゴリ一覧の並べ替えと同じくクライアント側でlocaleCompare('ja')して揃える。
+function sortRecipes(recipes, sortOrder) {
+  if (sortOrder === 'title') {
+    return [...recipes].sort((a, b) => (a.title || a.url).localeCompare(b.title || b.url, 'ja'));
+  }
+  if (sortOrder === 'rating') {
+    return [...recipes].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  }
+  return recipes;
+}
+
+export async function listRecipes({ categoryIds, minRating, sortOrder } = {}) {
   assertReady();
   const hasFilter = Array.isArray(categoryIds) && categoryIds.length > 0;
   const relation = hasFilter ? 'recipe_categories!inner(category_id)' : 'recipe_categories(category_id)';
@@ -83,7 +96,7 @@ export async function listRecipes({ categoryIds, minRating } = {}) {
 
   const { data, error } = await query;
   if (error) throw error;
-  return dedupeById(data);
+  return sortRecipes(dedupeById(data), sortOrder);
 }
 
 export async function getRecipeDetail(id) {

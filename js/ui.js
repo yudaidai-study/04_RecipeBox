@@ -49,6 +49,19 @@ function ratingRowHtml(minRating) {
   return html;
 }
 
+// 一覧の並び順(フィルタ画面専用)。値はapi.listRecipesのsortOrderにそのまま渡す。
+const SORT_OPTIONS = [
+  { value: 'created', label: '最近追加した順' },
+  { value: 'title', label: '名称順' },
+  { value: 'rating', label: '評価順' },
+];
+
+function sortRowHtml(activeValue) {
+  return SORT_OPTIONS
+    .map(({ value, label }) => `<button type="button" class="cat-chip ${value === activeValue ? 'active' : ''}" data-value="${value}">${label}</button>`)
+    .join('');
+}
+
 function formatBytes(bytes) {
   if (!bytes) return '';
   if (bytes < 1024) return `${bytes}B`;
@@ -103,6 +116,12 @@ export function initUI(h) {
     const btn = e.target.closest('[data-action="set-min-rating"]');
     if (!btn) return;
     handlers.onFilterRatingSelect?.(Number(btn.dataset.value));
+  });
+  // 並び順は複数選択ではなく常にどれか1つが選ばれている状態にする(トグルではなく選択)。
+  document.getElementById('filter-sort-row').addEventListener('click', (e) => {
+    const chip = e.target.closest('.cat-chip');
+    if (!chip) return;
+    handlers.onFilterSortSelect?.(chip.dataset.value);
   });
   document.getElementById('filter-clear').addEventListener('click', () => handlers.onFilterClear?.());
   document.getElementById('filter-apply').addEventListener('click', () => handlers.onFilterApply?.());
@@ -287,6 +306,10 @@ export function renderFreeTagPicker(prefix, categories, activeIds) {
 
 export function renderRatingRow(containerId, minRating) {
   document.getElementById(containerId).innerHTML = ratingRowHtml(minRating);
+}
+
+export function renderSortRow(activeValue) {
+  document.getElementById('filter-sort-row').innerHTML = sortRowHtml(activeValue);
 }
 
 export function updateFilterBadge(count) {
