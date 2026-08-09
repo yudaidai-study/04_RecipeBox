@@ -33,9 +33,6 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <span id="filter-badge" class="filter-badge hidden">0</span>
           </button>
-          <button id="logout-btn" class="icon-btn" aria-label="ログアウト" title="ログアウト">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          </button>
         </div>
       </div>
 
@@ -73,6 +70,11 @@
     <a id="fab-add" class="fab" href="./add.html" aria-label="レシピを追加">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </a>
+
+    <!-- 左下メニュー: ログアウトボタン廃止に伴い、ここに折りたたんで配置する -->
+    <button id="menu-fab" class="fab-menu" aria-label="メニュー" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+    </button>
   </div>
 
   <!-- ログイン -->
@@ -229,6 +231,28 @@
       <div class="btn-row" style="margin-top:20px;">
         <button id="filter-clear" class="btn btn-secondary" type="button">クリア</button>
         <button id="filter-apply" class="btn btn-primary" type="button">検索</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 左下メニュー(ログアウト・DB使用容量確認) -->
+  <div id="menu-overlay" class="overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <button class="sheet-close" id="menu-close" aria-label="閉じる">✕</button>
+
+      <div id="menu-step-main">
+        <h2 style="margin:4px 0 16px; font-size:18px;">メニュー</h2>
+        <div class="btn-row" style="flex-direction:column; gap:10px;">
+          <button id="menu-usage-btn" class="btn btn-secondary" type="button">📊 DB使用容量を確認</button>
+          <button id="menu-logout-btn" class="btn btn-danger" type="button">ログアウト</button>
+        </div>
+      </div>
+
+      <div id="menu-step-usage" class="hidden">
+        <button id="menu-usage-back" class="btn-text" type="button" style="padding:4px 0 14px;">◀ 戻る</button>
+        <h2 style="margin:0 0 16px; font-size:18px;">DB使用容量</h2>
+        <div id="menu-usage-content"></div>
       </div>
     </div>
   </div>

@@ -132,7 +132,16 @@ export function initUI(h) {
 
   document.getElementById('retry-btn').addEventListener('click', () => handlers.onRetry?.());
   document.getElementById('today-btn')?.addEventListener('click', () => handlers.onTodayCta?.());
-  document.getElementById('logout-btn')?.addEventListener('click', () => handlers.onLogout?.());
+
+  // 左下メニュー(ログアウト・DB使用容量確認)
+  document.getElementById('menu-fab')?.addEventListener('click', () => handlers.onMenuOpen?.());
+  document.getElementById('menu-close')?.addEventListener('click', () => handlers.onMenuClose?.());
+  document.getElementById('menu-overlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'menu-overlay') handlers.onMenuClose?.();
+  });
+  document.getElementById('menu-usage-btn')?.addEventListener('click', () => handlers.onMenuUsageOpen?.());
+  document.getElementById('menu-usage-back')?.addEventListener('click', () => handlers.onMenuUsageBack?.());
+  document.getElementById('menu-logout-btn')?.addEventListener('click', () => handlers.onLogout?.());
   // 今日の献立(④): レシピに紐付く項目だけクリックで元のページへ直接飛べる。
   document.getElementById('today-plan-list')?.addEventListener('click', (e) => {
     const item = e.target.closest('.today-plan-item[data-url]');
@@ -296,6 +305,75 @@ export function renderTodayPlan(entries, todayKey) {
     ? `<a class="today-plan-more" href="./calendar.html?date=${escHtml(todayKey)}">他の献立も見る ›</a>`
     : '';
   list.innerHTML = itemHtml + moreHtml;
+}
+
+/* ===== 左下メニュー(ログアウト・DB使用容量確認) ===== */
+
+function formatBytes(bytes) {
+  if (bytes == null) return '-';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let n = Number(bytes);
+  let i = 0;
+  while (n >= 1024 && i < units.length - 1) {
+    n /= 1024;
+    i++;
+  }
+  return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
+export function openMenuOverlay() {
+  document.getElementById('menu-overlay').classList.add('open');
+}
+
+export function closeMenuOverlay() {
+  document.getElementById('menu-overlay').classList.remove('open');
+}
+
+export function showMenuStep(step) {
+  document.getElementById('menu-step-main').classList.toggle('hidden', step !== 'main');
+  document.getElementById('menu-step-usage').classList.toggle('hidden', step !== 'usage');
+}
+
+export function showMenuUsageLoading() {
+  const el = document.getElementById('menu-usage-content');
+  if (el) el.innerHTML = '<div class="loading-state"><span class="spin-emoji">🍳</span></div>';
+}
+
+export function showMenuUsageError(message) {
+  const el = document.getElementById('menu-usage-content');
+  if (el) el.innerHTML = `<p class="cal-empty-note">${escHtml(message)}</p>`;
+}
+
+// db_usage_summary()(0011)の結果をそのまま受け取り、テーブル別・Storageバケット別の内訳を表示する。
+export function renderUsageSummary(data) {
+  const el = document.getElementById('menu-usage-content');
+  if (!el) return;
+  const tablesHtml = (data.tables || []).map((t) => `
+    <div class="usage-row">
+      <span class="usage-name">${escHtml(t.name)}</span>
+      <span class="usage-sub">${t.row_estimate >= 0 ? `${t.row_estimate}件` : ''}</span>
+      <span class="usage-bytes">${formatBytes(t.bytes)}</span>
+    </div>`).join('');
+  const bucketsHtml = (data.storage_buckets || []).length
+    ? data.storage_buckets.map((b) => `
+        <div class="usage-row">
+          <span class="usage-name">${escHtml(b.bucket_id)}</span>
+          <span class="usage-sub">${b.file_count}件</span>
+          <span class="usage-bytes">${formatBytes(b.bytes)}</span>
+        </div>`).join('')
+    : '<p class="cal-empty-note">まだ画像は保存されていません</p>';
+
+  el.innerHTML = `
+    <div class="usage-total">
+      <span class="usage-total-label">データベース合計</span>
+      <span class="usage-total-value">${formatBytes(data.database_bytes)}</span>
+    </div>
+    <p class="tag-group-label" style="margin-top:18px;">テーブル別内訳</p>
+    <div class="usage-list">${tablesHtml}</div>
+    <p class="tag-group-label" style="margin-top:18px;">Storageバケット別内訳(アーカイブ画像)</p>
+    <div class="usage-list">${bucketsHtml}</div>
+    <p class="archive-note" style="margin-top:14px; border-radius:var(--radius-sm);">Supabase無料プランの目安: データベース500MB・Storage 1GB</p>
+  `;
 }
 
 /* ===== フィルタ ===== */

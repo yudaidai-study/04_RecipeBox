@@ -525,8 +525,8 @@ function init() {
     const [y, m, d] = dateParam.split('-').map(Number);
     state.anchorDate = new Date(y, m - 1, d);
   }
-  initAuth(() => {
-    refresh();
+  initAuth(async () => {
+    await refresh(); // 献立データの取得完了を待ってからでないと、開いた瞬間は空のまま表示されてしまう
     if (isValidDate) openDay(dateParam);
   });
 }

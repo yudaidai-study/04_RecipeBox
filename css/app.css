@@ -492,6 +492,27 @@ main {
 .fab:active { transform: scale(0.94); }
 .fab svg { width: 26px; height: 26px; }
 
+/* 左下メニュー(ログアウト・DB使用容量確認)。主FABより控えめなサイズ・配色にする */
+.fab-menu {
+  position: fixed;
+  left: max(20px, calc(20px + env(safe-area-inset-left)));
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-1);
+  color: var(--text-2);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+}
+.fab-menu:active { transform: scale(0.94); background: var(--surface-2); }
+.fab-menu svg { width: 20px; height: 20px; }
+
 /* ===== オーバーレイ共通(ログイン・詳細・ランダム提案) ===== */
 
 .overlay {
@@ -1048,6 +1069,33 @@ main {
   padding-top: 14px;
   border-top: 1px solid var(--sep);
 }
+
+/* ===== DB使用容量(左下メニュー) ===== */
+
+.usage-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+}
+.usage-total-label { font-size: 13px; font-weight: 700; color: var(--accent-2); }
+.usage-total-value { font-size: 20px; font-weight: 800; color: var(--accent-2); }
+
+.usage-list { display: flex; flex-direction: column; }
+.usage-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--sep);
+  font-size: 13.5px;
+}
+.usage-row:last-child { border-bottom: none; }
+.usage-name { font-weight: 700; }
+.usage-sub { color: var(--text-3); font-size: 12px; }
+.usage-bytes { margin-left: auto; color: var(--text-2); font-weight: 700; white-space: nowrap; }
 
 /* ===== レスポンシブ ===== */
 

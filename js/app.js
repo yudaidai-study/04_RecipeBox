@@ -332,6 +332,27 @@ function init() {
     onLogout() {
       if (confirm('ログアウトしますか?')) signOut();
     },
+    onMenuOpen() {
+      ui.showMenuStep('main');
+      ui.openMenuOverlay();
+    },
+    onMenuClose() {
+      ui.closeMenuOverlay();
+    },
+    async onMenuUsageOpen() {
+      ui.showMenuStep('usage');
+      ui.showMenuUsageLoading();
+      try {
+        const data = await api.getUsageSummary();
+        ui.renderUsageSummary(data);
+      } catch (err) {
+        console.error(err);
+        ui.showMenuUsageError('使用容量の取得に失敗しました');
+      }
+    },
+    onMenuUsageBack() {
+      ui.showMenuStep('main');
+    },
     onDetailOpenOriginal() {
       const recipe = state.detailRecipe;
       if (!recipe) return;

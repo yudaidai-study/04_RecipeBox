@@ -355,3 +355,14 @@ export async function removeMealPlanEntry(id) {
   const { error } = await supabase.from('meal_plan').delete().eq('id', id);
   if (error) throw error;
 }
+
+/* ===== DB使用容量(左下メニュー) ===== */
+
+// db_usage_summary()はSECURITY DEFINER関数(0011)。テーブルごとの実サイズ・Storageバケットごとの
+// 使用量・DB全体サイズをまとめて返す。個人利用の2人共有アプリのため内訳まで見せてよい設計。
+export async function getUsageSummary() {
+  assertReady();
+  const { data, error } = await supabase.rpc('db_usage_summary');
+  if (error) throw error;
+  return data;
+}
