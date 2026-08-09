@@ -76,7 +76,7 @@ async function loadTodayPlan() {
       image_url: r.recipes?.image_url || null,
       url: r.recipes?.url || null,
     }));
-    ui.renderTodayPlan(entries);
+    ui.renderTodayPlan(entries, key);
   } catch (err) {
     console.error(err);
   }

@@ -274,23 +274,28 @@ export function renderRecipeGrid(recipes, categoriesById) {
   }).join('');
 }
 
-// 今日の献立(④)。urlが付いている項目(レシピ紐付き)だけクリック可能にし、元のページへ直接飛ぶ。
+// 今日の献立(④)。省スペースのため1件だけを右端まで大きく表示し、複数ある場合は
+// 「他の献立も見る」リンクを右端に添えて、その日のカレンダー詳細シートへ誘導する。
+// urlが付いている項目(レシピ紐付き)だけクリック可能にし、元のページへ直接飛ぶ。
 // テキストのみの献立(②)はurlが無いため表示専用にする。
-export function renderTodayPlan(entries) {
+export function renderTodayPlan(entries, todayKey) {
   const list = document.getElementById('today-plan-list');
   if (!list) return;
   if (!entries.length) {
     list.innerHTML = '<p class="today-plan-empty">まだ決まっていません。🎲で決めましょう</p>';
     return;
   }
-  list.innerHTML = entries.map((e) => {
-    const clickable = !!e.url;
-    return `
-      <button type="button" class="today-plan-item ${clickable ? '' : 'not-clickable'}" ${clickable ? `data-url="${escHtml(e.url)}"` : 'disabled'}>
-        <span class="thumb">${thumbHtml(e.image_url)}</span>
-        <span class="title">${escHtml(e.title)}</span>
-      </button>`;
-  }).join('');
+  const [first, ...rest] = entries;
+  const clickable = !!first.url;
+  const itemHtml = `
+    <button type="button" class="today-plan-item ${clickable ? '' : 'not-clickable'}" ${clickable ? `data-url="${escHtml(first.url)}"` : 'disabled'}>
+      <span class="thumb">${thumbHtml(first.image_url)}</span>
+      <span class="title">${escHtml(first.title)}</span>
+    </button>`;
+  const moreHtml = rest.length > 0
+    ? `<a class="today-plan-more" href="./calendar.html?date=${escHtml(todayKey)}">他の献立も見る ›</a>`
+    : '';
+  list.innerHTML = itemHtml + moreHtml;
 }
 
 /* ===== フィルタ ===== */

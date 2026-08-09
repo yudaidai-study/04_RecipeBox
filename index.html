@@ -29,8 +29,8 @@
           <a href="./calendar.html" class="icon-btn" aria-label="献立カレンダー" title="献立カレンダー">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </a>
-          <button id="filter-btn" class="icon-btn" aria-label="フィルタ" title="フィルタ">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="4 4 20 4 14 12 14 19 10 21 10 12 4 4"/></svg>
+          <button id="filter-btn" class="icon-btn" aria-label="検索" title="検索">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <span id="filter-badge" class="filter-badge hidden">0</span>
           </button>
           <button id="logout-btn" class="icon-btn" aria-label="ログアウト" title="ログアウト">
@@ -70,7 +70,9 @@
       <div id="recipe-grid" class="recipe-grid"></div>
     </main>
 
-    <a id="fab-add" class="fab" href="./add.html" aria-label="レシピを追加">＋</a>
+    <a id="fab-add" class="fab" href="./add.html" aria-label="レシピを追加">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </a>
   </div>
 
   <!-- ログイン -->
@@ -208,7 +210,7 @@
     <div class="sheet">
       <div class="sheet-handle"></div>
       <button class="sheet-close" id="filter-close" aria-label="閉じる">✕</button>
-      <h2 style="margin:4px 0 16px; font-size:18px;">フィルタ</h2>
+      <h2 style="margin:4px 0 16px; font-size:18px;">検索</h2>
       <div class="tag-group">
         <p class="tag-group-label">評価</p>
         <div id="filter-rating-row" class="rating-stars interactive"></div>
@@ -226,7 +228,7 @@
       </div>
       <div class="btn-row" style="margin-top:20px;">
         <button id="filter-clear" class="btn btn-secondary" type="button">クリア</button>
-        <button id="filter-apply" class="btn btn-primary" type="button">絞り込む</button>
+        <button id="filter-apply" class="btn btn-primary" type="button">検索</button>
       </div>
     </div>
   </div>

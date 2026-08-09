@@ -516,9 +516,18 @@ dayRandomAddBtn.addEventListener('click', () => {
   if (state.randomCandidate) addRecipeToDay(state.randomCandidate);
 });
 
+// ホーム画面の「他の献立も見る」(④の発展)から ?date=YYYY-MM-DD 付きで開かれた場合、
+// その週を表示したうえで該当日の献立シートを自動で開く。
 function init() {
+  const dateParam = new URLSearchParams(location.search).get('date');
+  const isValidDate = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam);
+  if (isValidDate) {
+    const [y, m, d] = dateParam.split('-').map(Number);
+    state.anchorDate = new Date(y, m - 1, d);
+  }
   initAuth(() => {
     refresh();
+    if (isValidDate) openDay(dateParam);
   });
 }
 
