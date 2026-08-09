@@ -192,6 +192,12 @@ export async function updateRating(id, rating) {
   if (error) throw error;
 }
 
+export async function updateMemo(id, memo) {
+  assertReady();
+  const { error } = await supabase.from('recipes').update({ memo: memo || null }).eq('id', id);
+  if (error) throw error;
+}
+
 // 既存の紐付けを一旦全削除してから選択中のカテゴリで貼り直す(差分更新はせず単純化)。
 export async function updateRecipeCategories(recipeId, categoryIds) {
   assertReady();

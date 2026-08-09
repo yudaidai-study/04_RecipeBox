@@ -92,8 +92,9 @@ async function openDetail(id) {
   }
 }
 
-// タグ・評価の編集(⑪): 詳細画面では表示のみ、実際の変更はedit-overlayの下書きに対して行い、
-// 「保存する」を押した時点でまとめてDBへ反映する。
+// タグ・評価・メモの編集: 詳細画面では表示のみ、実際の変更はedit-overlayの下書きに対して行い、
+// 「保存する」を押した時点でまとめてDBへ反映する。メモはチップのような専用stateを持たず、
+// テキストエリア自体を下書きとして扱い、保存時にDOMから直接読む(add.jsのmemo-inputと同じ考え方)。
 async function handleEditSave() {
   const recipe = state.detailRecipe;
   if (!recipe) return;
@@ -101,6 +102,8 @@ async function handleEditSave() {
   try {
     await api.updateRecipeCategories(recipe.id, [...state.editDraftCategoryIds]);
     await api.updateRating(recipe.id, state.editDraftRating);
+    const memoInput = document.getElementById('edit-memo-input');
+    if (memoInput) await api.updateMemo(recipe.id, memoInput.value.trim());
     ui.closeEditOverlay();
     ui.toast('更新しました');
     await openDetail(recipe.id); // 詳細を再取得して反映
@@ -326,6 +329,8 @@ function init() {
       ui.renderEditFreeTagSuggestions(state.categories);
       ui.renderEditRating(state.editDraftRating);
       ui.resetEditNewTagRow();
+      const memoInput = document.getElementById('edit-memo-input');
+      if (memoInput) memoInput.value = recipe.memo || '';
       ui.openEditOverlay();
     },
     onEditClose() {
