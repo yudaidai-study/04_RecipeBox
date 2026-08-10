@@ -302,7 +302,7 @@ export function renderTodayPlan(entries, todayKey) {
   const list = document.getElementById('today-plan-list');
   if (!list) return;
   if (!entries.length) {
-    list.innerHTML = '<p class="today-plan-empty">まだ決まっていません。🎲で決めましょう</p>';
+    list.innerHTML = '<p class="today-plan-empty">まだ決まっていません。🔀で決めましょう</p>';
     return;
   }
   const [first, ...rest] = entries;
