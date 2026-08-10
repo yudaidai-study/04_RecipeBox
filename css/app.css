@@ -822,12 +822,21 @@ main {
   flex: 1;
   min-width: 0;
 }
+/* rating-stars/interactiveはfield-row-value自身に付くため(#filter-rating-row等)、
+   従来「.field-row-value .rating-stars.interactive」という子孫セレクタでは一致せず、
+   詳細画面用の大きめの余白(margin-bottom:14px)が意図せず効いてしまっていた(タグ列より
+   評価行だけ縦に間延びして見えるズレの原因)。要素自身に付くケースも含めて明示的に一致させる。 */
+.field-row-value.rating-stars.interactive,
 .field-row-value .rating-stars.interactive { margin: 0; gap: 0; }
-.field-row-value .star-btn { min-width: 28px; min-height: 28px; font-size: 19px; padding: 2px; }
-.field-row-value .tag-row { margin: 0; gap: 6px; }
-.field-row-value .cat-chip { padding: 7px 13px; min-height: 32px; font-size: 13px; }
+/* タップ領域は40px前後(推奨タップサイズ)を確保しつつ、行の縦の詰まりを他の項目と揃える。
+   「.field-row-value.rating-stars.interactive .star-btn」を明示しているのは、
+   詳細度で「.rating-stars.interactive .star-btn」(クラス3つ)に負けて上書きされないようにするため。 */
+.field-row-value.rating-stars.interactive .star-btn,
+.field-row-value .star-btn { min-width: 40px; min-height: 40px; font-size: 22px; padding: 2px; }
+.field-row-value .tag-row { margin: 0; gap: 8px; }
+.field-row-value .cat-chip { padding: 9px 14px; min-height: 40px; font-size: 13px; }
 /* iOS Safariの自動ズームを避けるため入力欄のfont-sizeは16px未満にしない(⑬)。密度は上げても文字は縮めない。 */
-.field-row-value .free-tag-picker-input { margin-top: 0; min-height: 34px; padding: 7px 10px; }
+.field-row-value .free-tag-picker-input { margin-top: 0; min-height: 40px; padding: 9px 10px; }
 
 /* ===== add.html 専用 ===== */
 
