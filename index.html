@@ -120,18 +120,24 @@
       <div id="random-step-pick">
         <h2 style="margin:4px 0 4px; font-size:18px;">今日は何作る?</h2>
         <p style="margin:0 0 18px; color:var(--text-2); font-size:13px;">カテゴリを選んで決めよう</p>
-        <div class="tag-group">
-          <p class="tag-group-label">評価</p>
-          <div id="random-rating-row" class="rating-stars interactive"></div>
+        <div class="field-list">
+          <div class="field-row">
+            <p class="field-row-label">評価</p>
+            <div id="random-rating-row" class="field-row-value rating-stars interactive"></div>
+          </div>
         </div>
         <div id="random-cats"></div>
-        <div class="tag-group">
-          <p class="tag-group-label">タグ検索</p>
-          <div class="tag-row" id="random-free-tag-row"></div>
-          <div class="free-tag-combo">
-            <input type="text" id="random-free-tag-input" class="free-tag-picker-input" list="random-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
-            <datalist id="random-free-tag-suggestions"></datalist>
-            <div id="random-free-tag-dropdown" class="combo-dropdown hidden"></div>
+        <div class="field-list">
+          <div class="field-row">
+            <p class="field-row-label">タグ検索</p>
+            <div class="field-row-value">
+              <div class="tag-row" id="random-free-tag-row"></div>
+              <div class="free-tag-combo">
+                <input type="text" id="random-free-tag-input" class="free-tag-picker-input" list="random-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
+                <datalist id="random-free-tag-suggestions"></datalist>
+                <div id="random-free-tag-dropdown" class="combo-dropdown hidden"></div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="btn-row" style="margin-top:18px;">
@@ -216,23 +222,29 @@
       <div class="sheet-handle"></div>
       <button class="sheet-close" id="filter-close" aria-label="閉じる">✕</button>
       <h2 style="margin:4px 0 16px; font-size:18px;">検索</h2>
-      <div class="tag-group">
-        <p class="tag-group-label">評価</p>
-        <div id="filter-rating-row" class="rating-stars interactive"></div>
-      </div>
-      <div id="filter-cat-groups"></div>
-      <div class="tag-group">
-        <p class="tag-group-label">タグ/キーワード検索</p>
-        <div class="tag-row" id="filter-free-tag-row"></div>
-        <div class="free-tag-combo">
-          <input type="text" id="filter-free-tag-input" class="free-tag-picker-input" list="filter-free-tag-suggestions" placeholder="タグ名または料理名の一部を入力してEnter" autocomplete="off">
-          <datalist id="filter-free-tag-suggestions"></datalist>
-          <div id="filter-free-tag-dropdown" class="combo-dropdown hidden"></div>
+      <div class="field-list">
+        <div class="field-row">
+          <p class="field-row-label">評価</p>
+          <div id="filter-rating-row" class="field-row-value rating-stars interactive"></div>
         </div>
       </div>
-      <div class="tag-group">
-        <p class="tag-group-label">並び順</p>
-        <div id="filter-sort-row" class="tag-row"></div>
+      <div id="filter-cat-groups"></div>
+      <div class="field-list">
+        <div class="field-row">
+          <p class="field-row-label">タグ検索</p>
+          <div class="field-row-value">
+            <div class="tag-row" id="filter-free-tag-row"></div>
+            <div class="free-tag-combo">
+              <input type="text" id="filter-free-tag-input" class="free-tag-picker-input" list="filter-free-tag-suggestions" placeholder="タグ名または料理名の一部を入力してEnter" autocomplete="off">
+              <datalist id="filter-free-tag-suggestions"></datalist>
+              <div id="filter-free-tag-dropdown" class="combo-dropdown hidden"></div>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <p class="field-row-label">並び順</p>
+          <div id="filter-sort-row" class="field-row-value tag-row"></div>
+        </div>
       </div>
       <div class="btn-row" style="margin-top:20px;">
         <button id="filter-clear" class="btn btn-secondary" type="button">クリア</button>
