@@ -795,34 +795,25 @@ main {
 }
 .tag-row:empty { display: none; }
 
-/* 案A: 見出しを横並びにする行(評価・並び順・タグ検索など、選択肢が少ない/縦に伸びない項目専用)。
-   ジャンル・料理区分・メインのようにチップ数が多く折り返しやすい項目は、従来どおり見出しを上に置く
-   (見出し列の分だけ折り返し幅が狭くなるのを避けるため)。検索・ランダム・保存画面で共通利用する。 */
+/* 表形式(案B): 見出しを左列に固定した行を、評価からタグ検索・並び順まで1つの連続した表として
+   積み上げる。タグ名を短縮した(他の国→他 等)ことで、チップ数の多いジャンル・料理区分・メインも
+   折り返しの心配なくこの表形式に収まるため、全項目を統一する。検索・ランダム・保存画面で共通利用。
+   編集画面のみ従来どおり見出しを上に置く構成のまま(compact未指定)。 */
 .field-list {
   display: flex;
   flex-direction: column;
-}
-.field-list + .field-list,
-.field-list + #filter-cat-groups,
-.field-list + #random-cats,
-.field-list + #day-filter-cats,
-#filter-cat-groups + .field-list,
-#random-cats + .field-list,
-#day-filter-cats + .field-list {
-  margin-top: 4px;
 }
 .field-row {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--sep);
 }
-.field-row:last-child { border-bottom: none; }
 .field-row-label {
   flex: 0 0 64px;
   margin: 0;
-  padding-top: 8px;
+  padding-top: 6px;
   font-size: 12px;
   font-weight: 700;
   color: var(--text-3);
@@ -831,9 +822,12 @@ main {
   flex: 1;
   min-width: 0;
 }
-.field-row-value .rating-stars.interactive { margin: 0; gap: 2px; }
-.field-row-value .tag-row { margin: 0; }
-.field-row-value .free-tag-picker-input:first-child { margin-top: 0; }
+.field-row-value .rating-stars.interactive { margin: 0; gap: 0; }
+.field-row-value .star-btn { min-width: 28px; min-height: 28px; font-size: 19px; padding: 2px; }
+.field-row-value .tag-row { margin: 0; gap: 6px; }
+.field-row-value .cat-chip { padding: 7px 13px; min-height: 32px; font-size: 13px; }
+/* iOS Safariの自動ズームを避けるため入力欄のfont-sizeは16px未満にしない(⑬)。密度は上げても文字は縮めない。 */
+.field-row-value .free-tag-picker-input { margin-top: 0; min-height: 34px; padding: 7px 10px; }
 
 /* ===== add.html 専用 ===== */
 

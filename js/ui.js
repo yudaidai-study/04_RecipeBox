@@ -23,7 +23,10 @@ const CAT_GROUP_DEFS = [
 ];
 
 // includeFree=falseだと自由入力グループを描画しない(⑨: 編集画面では自由入力を専用のチップ+追加欄で扱うため)。
-function groupedCatGroupsHtml(categories, activeIds, { includeFree = true } = {}) {
+// compact=trueだと表形式の行(.field-row、見出しを左列に固定)で描画する。タグ名が短くなり
+// (他の国→他 等)折り返しの心配が薄れたため、検索・ランダム・保存画面はこちらを使う。
+// 編集画面は従来どおり見出しを上に置く構成のまま(compact未指定=false)。
+function groupedCatGroupsHtml(categories, activeIds, { includeFree = true, compact = false } = {}) {
   const buckets = { genre: [], role: [], main_ingredient: [], free: [] };
   for (const c of categories) {
     const key = c.group_key && buckets[c.group_key] ? c.group_key : 'free';
@@ -35,6 +38,9 @@ function groupedCatGroupsHtml(categories, activeIds, { includeFree = true } = {}
       .map((c) => `<button type="button" class="cat-chip ${activeIds.has(c.id) ? 'active' : ''}" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
       .join('');
     if (!chips) return '';
+    if (compact) {
+      return `<div class="field-row"><p class="field-row-label">${label}</p><div class="field-row-value tag-row">${chips}</div></div>`;
+    }
     return `<div class="tag-group"><p class="tag-group-label">${label}</p><div class="tag-row">${chips}</div></div>`;
   }).join('');
 }
@@ -439,7 +445,7 @@ export function closeFilterOverlay() {
 
 // 自由入力は下のrenderFreeTagPickerで別途扱うため、ここでは固定3グループのみ描画する(⑪)。
 export function renderFilterGroups(categories, activeIds) {
-  document.getElementById('filter-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds, { includeFree: false });
+  document.getElementById('filter-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds, { includeFree: false, compact: true });
 }
 
 // containerIdを指定できる汎用版。献立カレンダーの日別フィルタ(⑦)など、
@@ -690,7 +696,7 @@ export function closeRandomOverlay() {
 }
 
 export function renderRandomCats(categories, activeIds) {
-  document.getElementById('random-cats').innerHTML = groupedCatGroupsHtml(categories, activeIds, { includeFree: false });
+  document.getElementById('random-cats').innerHTML = groupedCatGroupsHtml(categories, activeIds, { includeFree: false, compact: true });
 }
 
 export function showRandomStep(step) {

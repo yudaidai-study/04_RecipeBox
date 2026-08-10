@@ -218,7 +218,7 @@ async function ensureCategoriesLoaded() {
 }
 
 function renderDayFilterConditions() {
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
   ui.renderRatingRow('day-filter-rating-row', state.filterMinRating);
   ui.renderSortRow('day-search-sort-row', state.filterSortOrder);
@@ -429,7 +429,7 @@ dayFilterCats.addEventListener('click', (e) => {
   const id = chip.dataset.id;
   if (state.filterCategoryIds.has(id)) state.filterCategoryIds.delete(id);
   else state.filterCategoryIds.add(id);
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
 });
 
@@ -443,7 +443,7 @@ dayFilterFreeTagRow.addEventListener('click', (e) => {
   } else {
     state.filterCategoryIds.delete(chip.dataset.id);
   }
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
 });
 
@@ -463,7 +463,7 @@ function pickDayFreeTag(name) {
     toast('そのタグは見つかりませんでした');
     return;
   }
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false });
+  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
   dayFilterFreeTagInput.value = '';
 }

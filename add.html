@@ -38,35 +38,34 @@
           <input id="url-input" type="url" inputmode="url" placeholder="https://..." autocomplete="off" required>
         </div>
 
-        <div class="field-list" style="margin-bottom:14px;">
-          <div class="field-row">
-            <p class="field-row-label">評価(任意)</p>
-            <div id="rating-picker" class="field-row-value rating-stars interactive"></div>
-          </div>
-        </div>
-
         <div class="field">
-          <label>カテゴリ(複数選択できます)</label>
-          <div id="tag-picker">
-            <div class="tag-group">
-              <p class="tag-group-label">ジャンル</p>
-              <div class="tag-row" data-group="genre"></div>
+          <label>評価・カテゴリ(複数選択できます)</label>
+          <div id="tag-picker" class="field-list">
+            <div class="field-row">
+              <p class="field-row-label">評価</p>
+              <div id="rating-picker" class="field-row-value rating-stars interactive"></div>
             </div>
-            <div class="tag-group">
-              <p class="tag-group-label">料理区分</p>
-              <div class="tag-row" data-group="role"></div>
+            <div class="field-row">
+              <p class="field-row-label">ジャンル</p>
+              <div class="field-row-value tag-row" data-group="genre"></div>
             </div>
-            <div class="tag-group">
-              <p class="tag-group-label">メイン</p>
-              <div class="tag-row" data-group="main_ingredient"></div>
+            <div class="field-row">
+              <p class="field-row-label">料理区分</p>
+              <div class="field-row-value tag-row" data-group="role"></div>
             </div>
-            <div class="tag-group">
-              <p class="tag-group-label">タグ追加</p>
-              <div class="tag-row" id="free-tag-row"></div>
-              <div id="new-cat-row" class="new-cat-row">
-                <input id="new-cat-input" type="text" placeholder="タグ名(既存候補から選択も可)" maxlength="30" list="free-tag-suggestions" autocomplete="off">
-                <datalist id="free-tag-suggestions"></datalist>
-                <button id="new-cat-add" type="button">追加</button>
+            <div class="field-row">
+              <p class="field-row-label">メイン</p>
+              <div class="field-row-value tag-row" data-group="main_ingredient"></div>
+            </div>
+            <div class="field-row">
+              <p class="field-row-label">タグ追加</p>
+              <div class="field-row-value">
+                <div class="tag-row" id="free-tag-row"></div>
+                <div id="new-cat-row" class="new-cat-row">
+                  <input id="new-cat-input" type="text" placeholder="タグ名(既存候補から選択も可)" maxlength="30" list="free-tag-suggestions" autocomplete="off">
+                  <datalist id="free-tag-suggestions"></datalist>
+                  <button id="new-cat-add" type="button">追加</button>
+                </div>
               </div>
             </div>
           </div>
