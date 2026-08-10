@@ -634,6 +634,16 @@ main {
 .btn-row { display: flex; gap: 10px; }
 .btn-row .btn { flex: 1; }
 
+/* ボタン・見出し内のテキストと並べる線画アイコン(絵文字の代わりに、ホームのヘッダーアイコンと
+   同じテイストの虫眼鏡・シャッフルなどを使う場合に使用) */
+.btn-ico, .heading-ico {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  margin-right: 5px;
+}
+
 .form-error {
   background: var(--danger-soft);
   color: var(--danger);
