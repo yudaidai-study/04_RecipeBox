@@ -249,11 +249,6 @@ export function initUI(h) {
     if (!btn) return;
     handlers.onEditRatingSelect?.(Number(btn.dataset.value));
   });
-  document.getElementById('edit-new-cat-toggle').addEventListener('click', () => {
-    document.getElementById('edit-new-cat-toggle-wrap').classList.add('hidden');
-    document.getElementById('edit-new-cat-row').classList.remove('hidden');
-    document.getElementById('edit-free-tag-input').focus();
-  });
   const editNewCatInput = document.getElementById('edit-free-tag-input');
   editNewCatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -351,7 +346,8 @@ export function renderTodayPlan(entries, todayKey) {
   const list = document.getElementById('today-plan-list');
   if (!list) return;
   if (!entries.length) {
-    list.innerHTML = '<p class="today-plan-empty">まだ決まっていません。🔀で決めましょう</p>';
+    // 右上のヘッダーアイコン(おまかせボタン)と同じシャッフルの線画アイコンを使い、絵文字と混在させない。
+    list.innerHTML = '<p class="today-plan-empty">まだ決まっていません。<svg class="heading-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>で決めましょう</p>';
     return;
   }
   const [first, ...rest] = entries;
@@ -835,8 +831,6 @@ export function renderEditFreeTagSuggestions(categories) {
 // 編集シートを開くたびに、前回開いたときの入力状態(タグ追加欄が開いたまま等)を初期状態に戻す。
 export function resetEditNewTagRow() {
   document.getElementById('edit-free-tag-input').value = '';
-  document.getElementById('edit-new-cat-row').classList.add('hidden');
-  document.getElementById('edit-new-cat-toggle-wrap').classList.remove('hidden');
 }
 
 export function renderEditRating(rating) {
