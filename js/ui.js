@@ -252,9 +252,9 @@ export function initUI(h) {
   document.getElementById('edit-new-cat-toggle').addEventListener('click', () => {
     document.getElementById('edit-new-cat-toggle-wrap').classList.add('hidden');
     document.getElementById('edit-new-cat-row').classList.remove('hidden');
-    document.getElementById('edit-new-cat-input').focus();
+    document.getElementById('edit-free-tag-input').focus();
   });
-  const editNewCatInput = document.getElementById('edit-new-cat-input');
+  const editNewCatInput = document.getElementById('edit-free-tag-input');
   editNewCatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -265,6 +265,11 @@ export function initUI(h) {
     const name = editNewCatInput.value.trim();
     if (!name) return;
     handlers.onEditNewTagAdd?.(name);
+  });
+  // レシピ追加画面と同じ、五十音インデックス込みのタグ候補ドロップダウンを使う。
+  setupFreeTagDropdown('edit', (name) => {
+    editNewCatInput.value = name;
+    document.getElementById('edit-new-cat-add').click();
   });
   document.getElementById('edit-save').addEventListener('click', () => handlers.onEditSave?.());
   document.getElementById('edit-delete').addEventListener('click', () => handlers.onEditDelete?.());
@@ -575,10 +580,10 @@ export function renderFreeTagPicker(prefix, categories, activeIds, keywords) {
   const row = document.getElementById(`${prefix}-free-tag-row`);
   if (row) {
     const tagChipsHtml = activeChips
-      .map((c) => `<button type="button" class="cat-chip active" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
+      .map((c) => `<button type="button" class="cat-chip active" data-id="${escHtml(c.id)}">${escHtml(c.name)}<span class="chip-x" aria-hidden="true">×</span></button>`)
       .join('');
     const keywordChipsHtml = (keywords || [])
-      .map((k) => `<button type="button" class="cat-chip active keyword-chip" data-keyword="${escHtml(k)}">🔍 ${escHtml(k)}</button>`)
+      .map((k) => `<button type="button" class="cat-chip active keyword-chip" data-keyword="${escHtml(k)}">🔍 ${escHtml(k)}<span class="chip-x" aria-hidden="true">×</span></button>`)
       .join('');
     row.innerHTML = tagChipsHtml + keywordChipsHtml;
   }
@@ -813,20 +818,23 @@ export function renderEditGroups(categories, activeIds) {
   document.getElementById('edit-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds, { includeFree: false });
   const freeChips = categories.filter((c) => !c.group_key && activeIds.has(c.id));
   document.getElementById('edit-free-tag-row').innerHTML = freeChips
-    .map((c) => `<button type="button" class="cat-chip active" data-id="${escHtml(c.id)}">${escHtml(c.name)}</button>`)
+    .map((c) => `<button type="button" class="cat-chip active" data-id="${escHtml(c.id)}">${escHtml(c.name)}<span class="chip-x" aria-hidden="true">×</span></button>`)
     .join('');
 }
 
-// 自由入力タグの新規追加欄(datalist)の候補を、既存の自由入力タグ名で埋める。
+// 自由入力タグの新規追加欄(datalist・五十音ドロップダウン)の候補を、既存の自由入力タグ名で埋める。
 export function renderEditFreeTagSuggestions(categories) {
   const list = document.getElementById('edit-free-tag-suggestions');
   if (!list) return;
-  list.innerHTML = categories.filter((c) => !c.group_key).map((c) => `<option value="${escHtml(c.name)}"></option>`).join('');
+  const freeCats = categories.filter((c) => !c.group_key);
+  list.innerHTML = freeCats.map((c) => `<option value="${escHtml(c.name)}"></option>`).join('');
+  setFreeTagCategories('edit', freeCats);
+  renderGojuonRow('edit');
 }
 
 // 編集シートを開くたびに、前回開いたときの入力状態(タグ追加欄が開いたまま等)を初期状態に戻す。
 export function resetEditNewTagRow() {
-  document.getElementById('edit-new-cat-input').value = '';
+  document.getElementById('edit-free-tag-input').value = '';
   document.getElementById('edit-new-cat-row').classList.add('hidden');
   document.getElementById('edit-new-cat-toggle-wrap').classList.remove('hidden');
 }

@@ -83,6 +83,19 @@ function tagChip(cat) {
   return btn;
 }
 
+// 自由入力タグ用のチップ(⑯): この画面で追加した直後のタグだけをfreeTagRowに表示するので、
+// 常にactive(選択中)扱い。タグ名の右にキャンセル用の×を添えて、外せることを分かりやすくする。
+function freeTagChip(cat) {
+  const btn = tagChip(cat);
+  btn.classList.add('active');
+  const x = document.createElement('span');
+  x.className = 'chip-x';
+  x.setAttribute('aria-hidden', 'true');
+  x.textContent = '×';
+  btn.appendChild(x);
+  return btn;
+}
+
 // 自由入力タグはチップとして一覧表示しない(④): この画面で新しく追加したタグだけをfreeTagRowに表示する。
 // 既存の自由入力タグ名は、新規タグ入力欄の予測変換(datalist)候補としてのみ使う(⑨)。
 async function loadCategoriesIntoPicker() {
@@ -134,6 +147,13 @@ tagPicker.addEventListener('click', (e) => {
   const chip = e.target.closest('.cat-chip');
   if (!chip) return;
   const id = chip.dataset.id;
+  if (chip.parentElement === freeTagRow) {
+    // 自由入力タグ(この画面で追加した分)は常にactiveの1状態しかないので、×/チップタップで
+    // 選択解除ではなく行ごと取り消す(タグ自体はDBに残るので、また入力すれば選び直せる)。
+    selectedCategoryIds.delete(id);
+    chip.remove();
+    return;
+  }
   if (selectedCategoryIds.has(id)) {
     selectedCategoryIds.delete(id);
     chip.classList.remove('active');
@@ -159,17 +179,13 @@ newCatAdd.addEventListener('click', async () => {
     const cat = await api.createCategory(name);
     // 既存の同名タグが既にどこかのグループに表示されている場合は重複追加しない
     if (!tagPicker.querySelector(`.cat-chip[data-id="${cat.id}"]`)) {
-      freeTagRow.appendChild(tagChip(cat));
+      freeTagRow.appendChild(freeTagChip(cat));
+      selectedCategoryIds.add(cat.id);
     }
     // 新規作成した自由入力タグは、以降の予測変換候補にも加える
     if (!allFreeCategories.some((c) => c.id === cat.id)) {
       allFreeCategories.push(cat);
       renderFreeTagSuggestions();
-    }
-    const chip = tagPicker.querySelector(`.cat-chip[data-id="${cat.id}"]`);
-    if (chip && !selectedCategoryIds.has(cat.id)) {
-      selectedCategoryIds.add(cat.id);
-      chip.classList.add('active');
     }
     newCatInput.value = '';
   } catch (err) {

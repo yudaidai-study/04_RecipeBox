@@ -288,6 +288,8 @@ img {
   background: var(--text-1);
   border-color: var(--text-1);
 }
+/* 追加した自由入力タグの右に添える×(⑯): チップ全体がタップ領域なので装飾的な見た目でよい */
+.chip-x { margin-left: 6px; font-weight: 700; opacity: 0.75; }
 
 /* ===== メイン・カードグリッド ===== */
 
