@@ -22,7 +22,7 @@ const newCatRow = document.getElementById('new-cat-row');
 const newCatInput = document.getElementById('add-free-tag-input');
 const newCatAdd = document.getElementById('new-cat-add');
 
-const saveAgainBtn = document.getElementById('save-again-btn');
+const saveCloseBtn = document.getElementById('save-close-btn');
 const ratingPicker = document.getElementById('rating-picker');
 
 const selectedCategoryIds = new Set();
@@ -231,17 +231,11 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-saveAgainBtn.addEventListener('click', () => {
-  form.reset();
-  clearError();
-  selectedCategoryIds.clear();
-  tagPicker.querySelectorAll('.cat-chip.active').forEach((c) => c.classList.remove('active'));
-  selectedRating = null;
-  renderRatingPicker();
-  prefillNote.classList.add('hidden');
-  saveDone.classList.add('hidden');
-  form.classList.remove('hidden');
-  urlInput.focus();
+// window.close()は、そのタブがスクリプト(window.open等)で開かれた場合しか効かない
+// (共有メニュー経由やブラウザで直接開いた場合はブラウザ側で無視される)。閉じられなかった場合に
+// 備え、押しても何も起きないだけで画面上の「このタブは閉じて大丈夫です」の案内はそのまま残る。
+saveCloseBtn.addEventListener('click', () => {
+  window.close();
 });
 
 // 五十音インデックス(⑭)込みのタグ候補ドロップダウンは、検索・ランダム画面と同じ共通コンポーネントを使う。
