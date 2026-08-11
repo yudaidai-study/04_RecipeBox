@@ -119,25 +119,7 @@
 
       <div id="random-step-pick">
         <h2 style="margin:4px 0 16px; font-size:18px;"><svg class="heading-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>おまかせ</h2>
-        <div class="field-list">
-          <div class="field-row">
-            <p class="field-row-label">評価</p>
-            <div id="random-rating-row" class="field-row-value rating-stars interactive"></div>
-          </div>
-          <div id="random-cats"></div>
-          <div class="field-row">
-            <p class="field-row-label">タグ検索</p>
-            <div class="field-row-value">
-              <div class="tag-row" id="random-free-tag-row"></div>
-              <div class="gojuon-row" id="random-gojuon-row"></div>
-              <div class="free-tag-combo">
-                <input type="text" id="random-free-tag-input" class="free-tag-picker-input" list="random-free-tag-suggestions" placeholder="タグ名を入力または選択" autocomplete="off">
-                <datalist id="random-free-tag-suggestions"></datalist>
-                <div id="random-free-tag-dropdown" class="combo-dropdown hidden"></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div id="random-field-list"></div>
         <div class="btn-row" style="margin-top:18px;">
           <button id="random-clear" class="btn btn-secondary" type="button">クリア</button>
           <button id="random-confirm" class="btn btn-primary" type="button">ランダム表示</button>
@@ -185,30 +167,7 @@
       <div class="sheet-handle"></div>
       <button class="sheet-close" id="edit-close" aria-label="閉じる">✕</button>
       <h2 style="margin:4px 0 16px; font-size:18px;">編集</h2>
-      <div class="tag-group">
-        <p class="tag-group-label">評価</p>
-        <div id="edit-rating-row" class="rating-stars interactive"></div>
-      </div>
-      <div id="edit-cat-groups"></div>
-      <div class="tag-group">
-        <p class="tag-group-label">タグ追加</p>
-        <div class="tag-row" id="edit-free-tag-row"></div>
-        <div id="edit-new-cat-row">
-          <div class="gojuon-row" id="edit-gojuon-row"></div>
-          <div class="free-tag-combo">
-            <div class="new-cat-row">
-              <input id="edit-free-tag-input" type="text" placeholder="タグ名を入力または選択" maxlength="30" list="edit-free-tag-suggestions" autocomplete="off">
-              <datalist id="edit-free-tag-suggestions"></datalist>
-              <button id="edit-new-cat-add" type="button">追加</button>
-            </div>
-            <div id="edit-free-tag-dropdown" class="combo-dropdown hidden"></div>
-          </div>
-        </div>
-      </div>
-      <div class="field">
-        <label for="edit-memo-input">メモ</label>
-        <textarea id="edit-memo-input" placeholder="次回作るときのメモなど"></textarea>
-      </div>
+      <div id="edit-field-list"></div>
       <div class="btn-row" style="margin-top:20px;">
         <button id="edit-cancel" class="btn btn-secondary" type="button">キャンセル</button>
         <button id="edit-save" class="btn btn-primary" type="button">保存する</button>
@@ -223,29 +182,7 @@
       <div class="sheet-handle"></div>
       <button class="sheet-close" id="filter-close" aria-label="閉じる">✕</button>
       <h2 style="margin:4px 0 16px; font-size:18px;"><svg class="heading-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>検索</h2>
-      <div class="field-list">
-        <div class="field-row">
-          <p class="field-row-label">評価</p>
-          <div id="filter-rating-row" class="field-row-value rating-stars interactive"></div>
-        </div>
-        <div id="filter-cat-groups"></div>
-        <div class="field-row">
-          <p class="field-row-label">タグ/キーワード検索</p>
-          <div class="field-row-value">
-            <div class="tag-row" id="filter-free-tag-row"></div>
-            <div class="gojuon-row" id="filter-gojuon-row"></div>
-            <div class="free-tag-combo">
-              <input type="text" id="filter-free-tag-input" class="free-tag-picker-input" list="filter-free-tag-suggestions" placeholder="レシピ名の一部またはタグ名を入力" autocomplete="off">
-              <datalist id="filter-free-tag-suggestions"></datalist>
-              <div id="filter-free-tag-dropdown" class="combo-dropdown hidden"></div>
-            </div>
-          </div>
-        </div>
-        <div class="field-row">
-          <p class="field-row-label">並び順</p>
-          <div id="filter-sort-row" class="field-row-value tag-row"></div>
-        </div>
-      </div>
+      <div id="filter-field-list"></div>
       <div class="btn-row" style="margin-top:20px;">
         <button id="filter-clear" class="btn btn-secondary" type="button">クリア</button>
         <button id="filter-apply" class="btn btn-primary" type="button">検索</button>

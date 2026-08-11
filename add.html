@@ -38,47 +38,7 @@
           <input id="url-input" type="url" inputmode="url" placeholder="https://..." autocomplete="off" required>
         </div>
 
-        <div class="field">
-          <label>評価・カテゴリ(複数選択できます)</label>
-          <div id="tag-picker" class="field-list">
-            <div class="field-row">
-              <p class="field-row-label">評価</p>
-              <div id="rating-picker" class="field-row-value rating-stars interactive"></div>
-            </div>
-            <div class="field-row">
-              <p class="field-row-label">ジャンル</p>
-              <div class="field-row-value tag-row" data-group="genre"></div>
-            </div>
-            <div class="field-row">
-              <p class="field-row-label">料理区分</p>
-              <div class="field-row-value tag-row" data-group="role"></div>
-            </div>
-            <div class="field-row">
-              <p class="field-row-label">メイン</p>
-              <div class="field-row-value tag-row" data-group="main_ingredient"></div>
-            </div>
-            <div class="field-row">
-              <p class="field-row-label">タグ追加</p>
-              <div class="field-row-value">
-                <div class="tag-row" id="free-tag-row"></div>
-                <div class="gojuon-row" id="add-gojuon-row"></div>
-                <div class="free-tag-combo">
-                  <div id="new-cat-row" class="new-cat-row">
-                    <input id="add-free-tag-input" type="text" placeholder="タグ名を入力または選択" maxlength="30" list="add-free-tag-suggestions" autocomplete="off">
-                    <datalist id="add-free-tag-suggestions"></datalist>
-                    <button id="new-cat-add" type="button">追加</button>
-                  </div>
-                  <div id="add-free-tag-dropdown" class="combo-dropdown hidden"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="memo-input">メモ(任意)</label>
-          <textarea id="memo-input" placeholder="次回作るときのメモなど"></textarea>
-        </div>
+        <div id="add-field-list"></div>
 
         <button id="save-btn" class="btn btn-primary" type="submit">保存する</button>
       </form>

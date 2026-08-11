@@ -89,6 +89,22 @@ let handlers = {};
 export function initUI(h) {
   handlers = h;
 
+  // 検索・ランダム・編集の各画面は評価・カテゴリ・タグ欄の骨格が共通なので、
+  // renderFieldList(⑰)で先に組み立ててから、以下の各要素へのイベント登録に進む。
+  renderFieldList('filter-field-list', 'filter', {
+    tagLabel: 'タグ/キーワード検索',
+    tagPlaceholder: 'レシピ名の一部またはタグ名を入力',
+    includeSort: true,
+  });
+  renderFieldList('random-field-list', 'random', {
+    tagLabel: 'タグ検索',
+  });
+  renderFieldList('edit-field-list', 'edit', {
+    tagLabel: 'タグ追加',
+    showAddButton: true,
+    includeMemo: true,
+  });
+
   document.getElementById('filter-btn').addEventListener('click', () => handlers.onFilterBtn?.());
   document.getElementById('filter-close').addEventListener('click', () => handlers.onFilterClose?.());
   document.getElementById('filter-overlay').addEventListener('click', (e) => {
@@ -253,10 +269,10 @@ export function initUI(h) {
   editNewCatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      document.getElementById('edit-new-cat-add').click();
+      document.getElementById('edit-free-tag-add').click();
     }
   });
-  document.getElementById('edit-new-cat-add').addEventListener('click', () => {
+  document.getElementById('edit-free-tag-add').addEventListener('click', () => {
     const name = editNewCatInput.value.trim();
     if (!name) return;
     handlers.onEditNewTagAdd?.(name);
@@ -264,7 +280,7 @@ export function initUI(h) {
   // レシピ追加画面と同じ、五十音インデックス込みのタグ候補ドロップダウンを使う。
   setupFreeTagDropdown('edit', (name) => {
     editNewCatInput.value = name;
-    document.getElementById('edit-new-cat-add').click();
+    document.getElementById('edit-free-tag-add').click();
   });
   document.getElementById('edit-save').addEventListener('click', () => handlers.onEditSave?.());
   document.getElementById('edit-delete').addEventListener('click', () => handlers.onEditDelete?.());
@@ -273,7 +289,7 @@ export function initUI(h) {
     if (e.target.id === 'random-overlay') closeRandomOverlay();
   });
   document.getElementById('random-close').addEventListener('click', closeRandomOverlay);
-  document.getElementById('random-cats').addEventListener('click', (e) => {
+  document.getElementById('random-cat-groups').addEventListener('click', (e) => {
     const chip = e.target.closest('.cat-chip');
     if (!chip) return;
     handlers.onRandomCatSelect?.(chip.dataset.id || null);
@@ -554,6 +570,66 @@ export function closeFilterOverlay() {
   document.getElementById('filter-overlay').classList.remove('open');
 }
 
+// 検索・ランダム・追加・編集の5画面すべてで使う共通部品(⑰)。
+// 評価・カテゴリ・タグ検索/追加という骨格は完全に同じで、画面ごとの違いは
+// 「並び順(検索のみ)」「メモ欄(追加・編集のみ)」「タグ欄に追加ボタンを出すか(追加・編集のみ)」
+// 「タグ欄のラベル文言」「キーワード検索を許すか」だけに集約されている。
+// containerIdの要素は空のまま用意しておけば良い(中身は毎回このHTMLで作り直す)。
+// prefixは各画面のDOM id接頭辞("filter" / "random" / "day-filter" / "add" / "edit")。
+export function renderFieldList(containerId, prefix, opts = {}) {
+  const {
+    tagLabel = 'タグ検索',
+    tagPlaceholder = 'タグ名を入力または選択',
+    includeSort = false,
+    showAddButton = false,
+    addButtonLabel = '追加',
+    includeMemo = false,
+    memoLabel = 'メモ',
+    memoPlaceholder = '次回作るときのメモなど',
+  } = opts;
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.classList.add('field-list');
+  el.innerHTML = `
+    <div class="field-row">
+      <p class="field-row-label">評価</p>
+      <div id="${prefix}-rating-row" class="field-row-value rating-stars interactive"></div>
+    </div>
+    <div id="${prefix}-cat-groups"></div>
+    <div class="field-row">
+      <p class="field-row-label" id="${prefix}-free-tag-label">${escHtml(tagLabel)}</p>
+      <div class="field-row-value">
+        <div class="tag-row" id="${prefix}-free-tag-row"></div>
+        <div class="gojuon-row" id="${prefix}-gojuon-row"></div>
+        <div class="free-tag-combo">
+          <div class="new-cat-row">
+            <input type="text" id="${prefix}-free-tag-input" class="free-tag-picker-input" list="${prefix}-free-tag-suggestions" placeholder="${escHtml(tagPlaceholder)}" autocomplete="off">
+            <datalist id="${prefix}-free-tag-suggestions"></datalist>
+            ${showAddButton ? `<button type="button" id="${prefix}-free-tag-add">${escHtml(addButtonLabel)}</button>` : ''}
+          </div>
+          <div id="${prefix}-free-tag-dropdown" class="combo-dropdown hidden"></div>
+        </div>
+      </div>
+    </div>
+    ${includeSort ? `
+    <div class="field-row" id="${prefix}-sort-group">
+      <p class="field-row-label">並び順</p>
+      <div id="${prefix}-sort-row" class="field-row-value tag-row"></div>
+    </div>` : ''}
+  `;
+  // メモ欄はfield-listの外側(兄弟要素)に挿入する。renderFieldListが再度呼ばれても
+  // 入力済みのメモを消したり二重に挿入したりしないよう、既にあれば何もしない。
+  if (includeMemo && !document.getElementById(`${prefix}-memo-input`)) {
+    const memoField = document.createElement('div');
+    memoField.className = 'field';
+    memoField.innerHTML = `
+      <label for="${prefix}-memo-input">${escHtml(memoLabel)}</label>
+      <textarea id="${prefix}-memo-input" placeholder="${escHtml(memoPlaceholder)}"></textarea>
+    `;
+    el.parentElement?.insertBefore(memoField, el.nextSibling);
+  }
+}
+
 // 自由入力は下のrenderFreeTagPickerで別途扱うため、ここでは固定3グループのみ描画する(⑪)。
 export function renderFilterGroups(categories, activeIds) {
   document.getElementById('filter-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds, { includeFree: false, compact: true });
@@ -708,6 +784,12 @@ export function renderRatingRow(containerId, minRating) {
   document.getElementById(containerId).innerHTML = ratingRowHtml(minRating);
 }
 
+// 検索・ランダム系の「n以上で絞り込む」とは意味が違い、レシピ1件に対して評価そのものを
+// 設定する星タップ(同じ星を再タップで解除)。追加・編集画面で共通に使う。
+export function renderRatingPicker(containerId, rating) {
+  document.getElementById(containerId).innerHTML = starsHtml(rating, true);
+}
+
 export function renderSortRow(containerId, activeValue) {
   document.getElementById(containerId).innerHTML = sortRowHtml(activeValue);
 }
@@ -818,33 +900,12 @@ export function closeEditOverlay() {
   document.getElementById('edit-overlay').classList.remove('open');
 }
 
-// 固定3グループ(ジャンル/料理区分/メイン)は従来通り全候補をチップ表示。
-// 自由入力は「もともと付与されているタグだけ」をチップ表示する(⑨)。新規追加はedit-new-cat-*で行う。
-export function renderEditGroups(categories, activeIds) {
-  document.getElementById('edit-cat-groups').innerHTML = groupedCatGroupsHtml(categories, activeIds, { includeFree: false });
-  const freeChips = categories.filter((c) => !c.group_key && activeIds.has(c.id));
-  document.getElementById('edit-free-tag-row').innerHTML = freeChips
-    .map((c) => `<button type="button" class="cat-chip active" data-id="${escHtml(c.id)}">${escHtml(c.name)}<span class="chip-x" aria-hidden="true">×</span></button>`)
-    .join('');
-}
-
-// 自由入力タグの新規追加欄(datalist・五十音ドロップダウン)の候補を、既存の自由入力タグ名で埋める。
-export function renderEditFreeTagSuggestions(categories) {
-  const list = document.getElementById('edit-free-tag-suggestions');
-  if (!list) return;
-  const freeCats = categories.filter((c) => !c.group_key);
-  list.innerHTML = freeCats.map((c) => `<option value="${escHtml(c.name)}"></option>`).join('');
-  setFreeTagCategories('edit', freeCats);
-  renderGojuonRow('edit');
-}
-
-// 編集シートを開くたびに、前回開いたときの入力状態(タグ追加欄が開いたまま等)を初期状態に戻す。
+// 編集シートを開くたびに、前回開いたときの入力状態(タグ追加欄の入力文字列)を初期状態に戻す。
+// 評価・カテゴリ・自由入力タグの一覧・候補は、検索・ランダム画面と全く同じ
+// renderRatingRow / renderCatGroups / renderFreeTagPicker(⑰)を使う(prefix "edit")ため、
+// edit専用の描画関数はここには残さない。
 export function resetEditNewTagRow() {
   document.getElementById('edit-free-tag-input').value = '';
-}
-
-export function renderEditRating(rating) {
-  document.getElementById('edit-rating-row').innerHTML = starsHtml(rating, true);
 }
 
 export function setEditSaving(isSaving) {
@@ -874,10 +935,6 @@ export function openRandomOverlay() {
 
 export function closeRandomOverlay() {
   document.getElementById('random-overlay').classList.remove('open');
-}
-
-export function renderRandomCats(categories, activeIds) {
-  document.getElementById('random-cats').innerHTML = groupedCatGroupsHtml(categories, activeIds, { includeFree: false, compact: true });
 }
 
 export function showRandomStep(step) {

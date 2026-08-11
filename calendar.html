@@ -91,30 +91,7 @@
         <!-- 検索・ランダムどちらも「条件を選ぶ」ステップでのみ表示し、確定(検索する/決める!)を押したら
              隠して結果ステップへ遷移する(検索・ランダムで同じ画面遷移にするため)。 -->
         <div id="day-filter-conditions">
-          <div class="field-list">
-            <div class="field-row">
-              <p class="field-row-label">評価</p>
-              <div id="day-filter-rating-row" class="field-row-value rating-stars interactive"></div>
-            </div>
-            <div id="day-filter-cats"></div>
-            <div class="field-row">
-              <p class="field-row-label" id="day-filter-free-tag-label">タグ検索</p>
-              <div class="field-row-value">
-                <div class="tag-row" id="day-filter-free-tag-row"></div>
-                <div class="gojuon-row" id="day-filter-gojuon-row"></div>
-                <div class="free-tag-combo">
-                  <input type="text" id="day-filter-free-tag-input" class="free-tag-picker-input" list="day-filter-free-tag-suggestions" placeholder="タグ名で選択・入力" autocomplete="off">
-                  <datalist id="day-filter-free-tag-suggestions"></datalist>
-                  <div id="day-filter-free-tag-dropdown" class="combo-dropdown hidden"></div>
-                </div>
-              </div>
-            </div>
-            <!-- 検索モードのみ表示(フィルタ画面と同じ並び順選択、⑪): ランダムモードでは意味がないため隠す -->
-            <div id="day-search-sort-group" class="field-row hidden">
-              <p class="field-row-label">並び順</p>
-              <div id="day-search-sort-row" class="field-row-value tag-row"></div>
-            </div>
-          </div>
+          <div id="day-filter-field-list"></div>
         </div>
 
         <!-- 検索モードの「条件を選ぶ」ステップ専用ボタン -->

@@ -22,13 +22,16 @@ const dayFilterPanel = document.getElementById('day-filter-panel');
 const dayFilterBack = document.getElementById('day-filter-back');
 const dayFilterModeLabel = document.getElementById('day-filter-mode-label');
 const dayFilterConditions = document.getElementById('day-filter-conditions');
-const dayFilterCats = document.getElementById('day-filter-cats');
+// 検索・ランダム・追加・編集と全く同じ骨格(⑰)。ラベル・並び順表示の有無はモードによって
+// openDayFilterPanel内で切り替える(並び順の行は常に生成しておき、hiddenで出し分ける)。
+ui.renderFieldList('day-filter-field-list', 'day-filter', { tagLabel: 'タグ検索', includeSort: true });
+const dayFilterCats = document.getElementById('day-filter-cat-groups');
 const dayFilterFreeTagLabel = document.getElementById('day-filter-free-tag-label');
 const dayFilterFreeTagRow = document.getElementById('day-filter-free-tag-row');
 const dayFilterFreeTagInput = document.getElementById('day-filter-free-tag-input');
 const dayFilterRatingRow = document.getElementById('day-filter-rating-row');
-const daySearchSortGroup = document.getElementById('day-search-sort-group');
-const daySearchSortRow = document.getElementById('day-search-sort-row');
+const daySearchSortGroup = document.getElementById('day-filter-sort-group');
+const daySearchSortRow = document.getElementById('day-filter-sort-row');
 const daySearchPickActions = document.getElementById('day-search-pick-actions');
 const daySearchClearBtn = document.getElementById('day-search-clear');
 const daySearchConfirmBtn = document.getElementById('day-search-confirm');
@@ -218,10 +221,10 @@ async function ensureCategoriesLoaded() {
 }
 
 function renderDayFilterConditions() {
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
+  ui.renderCatGroups('day-filter-cat-groups', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
   ui.renderRatingRow('day-filter-rating-row', state.filterMinRating);
-  ui.renderSortRow('day-search-sort-row', state.filterSortOrder);
+  ui.renderSortRow('day-filter-sort-row', state.filterSortOrder);
 }
 
 // 検索・ランダムどちらも「条件を選ぶ」ステップから始まり、確定ボタン(検索する/決める!)を押すまでは
@@ -433,7 +436,7 @@ dayFilterCats.addEventListener('click', (e) => {
   const id = chip.dataset.id;
   if (state.filterCategoryIds.has(id)) state.filterCategoryIds.delete(id);
   else state.filterCategoryIds.add(id);
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
+  ui.renderCatGroups('day-filter-cat-groups', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
 });
 
@@ -447,7 +450,7 @@ dayFilterFreeTagRow.addEventListener('click', (e) => {
   } else {
     state.filterCategoryIds.delete(chip.dataset.id);
   }
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
+  ui.renderCatGroups('day-filter-cat-groups', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
 });
 
@@ -467,7 +470,7 @@ function pickDayFreeTag(name) {
     toast('そのタグは見つかりませんでした');
     return;
   }
-  ui.renderCatGroups('day-filter-cats', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
+  ui.renderCatGroups('day-filter-cat-groups', state.categories, state.filterCategoryIds, { includeFree: false, compact: true });
   ui.renderFreeTagPicker('day-filter', state.categories, state.filterCategoryIds, [...state.filterKeywords]);
   dayFilterFreeTagInput.value = '';
 }
@@ -521,7 +524,7 @@ daySearchSortRow.addEventListener('click', (e) => {
   const chip = e.target.closest('.cat-chip');
   if (!chip) return;
   state.filterSortOrder = chip.dataset.value;
-  ui.renderSortRow('day-search-sort-row', state.filterSortOrder);
+  ui.renderSortRow('day-filter-sort-row', state.filterSortOrder);
 });
 
 dayRandomClearBtn.addEventListener('click', () => {

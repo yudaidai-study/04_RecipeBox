@@ -4,7 +4,6 @@ import * as ui from './ui.js';
 
 const form = document.getElementById('add-form');
 const urlInput = document.getElementById('url-input');
-const memoInput = document.getElementById('memo-input');
 const errorBox = document.getElementById('add-error');
 const saveBtn = document.getElementById('save-btn');
 const prefillNote = document.getElementById('prefill-note');
@@ -13,22 +12,29 @@ const saveDone = document.getElementById('save-done');
 const saveDoneEmoji = document.getElementById('save-done-emoji');
 const saveDoneTitle = document.getElementById('save-done-title');
 const saveDoneNote = document.getElementById('save-done-note');
-
-const tagPicker = document.getElementById('tag-picker');
-const freeTagRow = document.getElementById('free-tag-row');
-const freeTagSuggestions = document.getElementById('add-free-tag-suggestions');
-
-const newCatRow = document.getElementById('new-cat-row');
-const newCatInput = document.getElementById('add-free-tag-input');
-const newCatAdd = document.getElementById('new-cat-add');
-
 const saveCloseBtn = document.getElementById('save-close-btn');
-const ratingPicker = document.getElementById('rating-picker');
+
+// 評価・カテゴリ・タグ追加・メモは、検索・ランダム・編集画面と全く同じ骨格(⑰)を
+// renderFieldListで組み立てる。追加画面が他と違うのはメモ欄がある点と並び順欄がない点だけ。
+ui.renderFieldList('add-field-list', 'add', {
+  tagLabel: 'タグ追加',
+  showAddButton: true,
+  includeMemo: true,
+  memoLabel: 'メモ(任意)',
+});
+
+const catGroups = document.getElementById('add-cat-groups');
+const freeTagRow = document.getElementById('add-free-tag-row');
+const ratingRow = document.getElementById('add-rating-row');
+const newCatInput = document.getElementById('add-free-tag-input');
+const newCatAdd = document.getElementById('add-free-tag-add');
+const memoInput = document.getElementById('add-memo-input');
 
 const selectedCategoryIds = new Set();
 let selectedRating = null;
-// 自由入力タグの予測変換(datalist)用に、画面には出さず全件だけ保持しておく。
-let allFreeCategories = [];
+// 編集画面のstate.categoriesに相当。カテゴリ一覧全体(固定3グループ+自由入力タグ)を保持し、
+// renderCatGroups/renderFreeTagPickerにそのまま渡す。
+let allCategories = [];
 
 function prefillFromQuery() {
   const params = new URLSearchParams(location.search);
@@ -61,7 +67,7 @@ async function checkPrefillDuplicate(url) {
   prefillCheckLoading.classList.add('hidden');
   prefillNote.classList.remove('hidden');
   form.classList.remove('hidden');
-  loadCategoriesIntoPicker();
+  loadCategories();
 }
 
 function showError(msg) {
@@ -74,94 +80,53 @@ function clearError() {
   errorBox.classList.remove('show');
 }
 
-function tagChip(cat) {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'cat-chip';
-  btn.dataset.id = cat.id;
-  btn.textContent = cat.name;
-  return btn;
+// 評価・カテゴリ・タグ欄の再描画。編集画面のonEditChipToggle相当で、選択状態が変わるたびに
+// 呼ぶ(検索・ランダム・編集と同じrenderCatGroups/renderFreeTagPickerをそのまま使う)。
+function renderPicker() {
+  ui.renderCatGroups('add-cat-groups', allCategories, selectedCategoryIds, { includeFree: false, compact: true });
+  ui.renderFreeTagPicker('add', allCategories, selectedCategoryIds, []);
 }
 
-// 自由入力タグ用のチップ(⑯): この画面で追加した直後のタグだけをfreeTagRowに表示するので、
-// 常にactive(選択中)扱い。タグ名の右にキャンセル用の×を添えて、外せることを分かりやすくする。
-function freeTagChip(cat) {
-  const btn = tagChip(cat);
-  btn.classList.add('active');
-  const x = document.createElement('span');
-  x.className = 'chip-x';
-  x.setAttribute('aria-hidden', 'true');
-  x.textContent = '×';
-  btn.appendChild(x);
-  return btn;
-}
-
-// 自由入力タグはチップとして一覧表示しない(④): この画面で新しく追加したタグだけをfreeTagRowに表示する。
-// 既存の自由入力タグ名は、新規タグ入力欄の予測変換(datalist)候補としてのみ使う(⑨)。
-async function loadCategoriesIntoPicker() {
+async function loadCategories() {
   try {
-    const categories = await api.listCategories();
-    for (const cat of categories) {
-      if (cat.group_key) {
-        const row = tagPicker.querySelector(`.tag-row[data-group="${cat.group_key}"]`);
-        row?.appendChild(tagChip(cat));
-      } else {
-        allFreeCategories.push(cat);
-      }
-    }
-    renderFreeTagSuggestions();
-    ui.setFreeTagCategories('add', allFreeCategories);
-    ui.renderGojuonRow('add');
+    allCategories = await api.listCategories();
+    renderPicker();
   } catch (err) {
     console.error(err);
     showError('カテゴリの読み込みに失敗しました');
   }
 }
 
-function renderFreeTagSuggestions() {
-  freeTagSuggestions.innerHTML = '';
-  for (const cat of allFreeCategories) {
-    const opt = document.createElement('option');
-    opt.value = cat.name;
-    freeTagSuggestions.appendChild(opt);
-  }
+function renderRating() {
+  ui.renderRatingPicker('add-rating-row', selectedRating);
 }
 
-function renderRatingPicker() {
-  let html = '';
-  for (let n = 1; n <= 5; n++) {
-    html += `<button type="button" class="star-btn ${n <= (selectedRating || 0) ? 'filled' : ''}" data-value="${n}" aria-label="${n}つ星">★</button>`;
-  }
-  ratingPicker.innerHTML = html;
-}
-
-ratingPicker.addEventListener('click', (e) => {
-  const btn = e.target.closest('.star-btn');
+ratingRow.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action="set-rating"]');
   if (!btn) return;
   const value = Number(btn.dataset.value);
   selectedRating = selectedRating === value ? null : value; // 同じ星を再タップで評価解除
-  renderRatingPicker();
+  renderRating();
 });
 
-tagPicker.addEventListener('click', (e) => {
+// 固定3グループ・自由入力タグどちらも同じトグル動作(編集画面のonEditChipToggleと同じ)。
+catGroups.addEventListener('click', (e) => {
   const chip = e.target.closest('.cat-chip');
   if (!chip) return;
-  const id = chip.dataset.id;
-  if (chip.parentElement === freeTagRow) {
-    // 自由入力タグ(この画面で追加した分)は常にactiveの1状態しかないので、×/チップタップで
-    // 選択解除ではなく行ごと取り消す(タグ自体はDBに残るので、また入力すれば選び直せる)。
-    selectedCategoryIds.delete(id);
-    chip.remove();
-    return;
-  }
-  if (selectedCategoryIds.has(id)) {
-    selectedCategoryIds.delete(id);
-    chip.classList.remove('active');
-  } else {
-    selectedCategoryIds.add(id);
-    chip.classList.add('active');
-  }
+  toggleCategoryId(chip.dataset.id);
 });
+freeTagRow.addEventListener('click', (e) => {
+  const chip = e.target.closest('.cat-chip');
+  if (!chip) return;
+  toggleCategoryId(chip.dataset.id);
+});
+
+function toggleCategoryId(id) {
+  if (!id) return;
+  if (selectedCategoryIds.has(id)) selectedCategoryIds.delete(id);
+  else selectedCategoryIds.add(id);
+  renderPicker();
+}
 
 // プルダウン(datalist)候補を選んだ後や既存タグ名を入力した後、Enterでそのまま追加できるように。
 newCatInput.addEventListener('keydown', (e) => {
@@ -177,16 +142,11 @@ newCatAdd.addEventListener('click', async () => {
   newCatAdd.disabled = true;
   try {
     const cat = await api.createCategory(name);
-    // 既存の同名タグが既にどこかのグループに表示されている場合は重複追加しない
-    if (!tagPicker.querySelector(`.cat-chip[data-id="${cat.id}"]`)) {
-      freeTagRow.appendChild(freeTagChip(cat));
-      selectedCategoryIds.add(cat.id);
+    if (!allCategories.some((c) => c.id === cat.id)) {
+      allCategories.push(cat);
     }
-    // 新規作成した自由入力タグは、以降の予測変換候補にも加える
-    if (!allFreeCategories.some((c) => c.id === cat.id)) {
-      allFreeCategories.push(cat);
-      renderFreeTagSuggestions();
-    }
+    selectedCategoryIds.add(cat.id);
+    renderPicker();
     newCatInput.value = '';
   } catch (err) {
     console.error(err);
@@ -194,6 +154,12 @@ newCatAdd.addEventListener('click', async () => {
   } finally {
     newCatAdd.disabled = false;
   }
+});
+
+// 五十音インデックス(⑭)込みのタグ候補ドロップダウンは、検索・ランダム・編集画面と同じ共通コンポーネントを使う。
+ui.setupFreeTagDropdown('add', (name) => {
+  newCatInput.value = name;
+  newCatAdd.click();
 });
 
 // 保存成功/重複いずれの場合も同じ完了画面(絵文字・見出し・説明文とボタン行)を使い回す(⑩)。
@@ -254,14 +220,8 @@ saveCloseBtn.addEventListener('click', () => {
   window.close();
 });
 
-// 五十音インデックス(⑭)込みのタグ候補ドロップダウンは、検索・ランダム画面と同じ共通コンポーネントを使う。
-ui.setupFreeTagDropdown('add', (name) => {
-  newCatInput.value = name;
-  newCatAdd.click();
-});
-
 function init() {
-  renderRatingPicker();
+  renderRating();
   const prefillUrl = prefillFromQuery();
   if (prefillUrl) {
     // 判定が終わるまでフォームを見せない(ログイン画面の裏でチラつくのを防ぐため、authの結果を待つ前に隠す)
@@ -272,7 +232,7 @@ function init() {
     if (prefillUrl) {
       checkPrefillDuplicate(prefillUrl);
     } else {
-      loadCategoriesIntoPicker();
+      loadCategories();
     }
   });
 }

@@ -165,17 +165,17 @@ async function handleEditSave() {
 // レシピ追加画面(add.js)のnewCatAdd相当だが、保存は「保存する」ボタン押下時にまとめて行うため、
 // ここではeditDraftCategoryIdsへ加えるだけでDB更新はしない。
 async function handleEditNewTagAdd(name) {
-  const addBtn = document.getElementById('edit-new-cat-add');
+  const addBtn = document.getElementById('edit-free-tag-add');
   addBtn.disabled = true;
   try {
     const cat = await api.createCategory(name);
     if (!state.categoriesById.has(cat.id)) {
       state.categories.push(cat);
       state.categoriesById.set(cat.id, cat);
-      ui.renderEditFreeTagSuggestions(state.categories);
     }
     state.editDraftCategoryIds.add(cat.id);
-    ui.renderEditGroups(state.categories, state.editDraftCategoryIds);
+    ui.renderCatGroups('edit-cat-groups', state.categories, state.editDraftCategoryIds, { includeFree: false, compact: true });
+    ui.renderFreeTagPicker('edit', state.categories, state.editDraftCategoryIds, []);
     ui.resetEditNewTagRow();
   } catch (err) {
     console.error(err);
@@ -346,7 +346,7 @@ function init() {
       state.randomCategoryIds = new Set(state.activeCategoryIds);
       state.randomMinRating = state.activeMinRating;
       state.randomLastId = null;
-      ui.renderRandomCats(state.categories, state.randomCategoryIds);
+      ui.renderCatGroups('random-cat-groups', state.categories, state.randomCategoryIds, { includeFree: false, compact: true });
       ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
       ui.renderRatingRow('random-rating-row', state.randomMinRating);
       ui.showRandomStep('pick');
@@ -485,9 +485,9 @@ function init() {
       if (!recipe) return;
       state.editDraftCategoryIds = new Set((recipe.recipe_categories || []).map((rc) => rc.category_id));
       state.editDraftRating = recipe.rating;
-      ui.renderEditGroups(state.categories, state.editDraftCategoryIds);
-      ui.renderEditFreeTagSuggestions(state.categories);
-      ui.renderEditRating(state.editDraftRating);
+      ui.renderCatGroups('edit-cat-groups', state.categories, state.editDraftCategoryIds, { includeFree: false, compact: true });
+      ui.renderFreeTagPicker('edit', state.categories, state.editDraftCategoryIds, []);
+      ui.renderRatingPicker('edit-rating-row', state.editDraftRating);
       ui.resetEditNewTagRow();
       const memoInput = document.getElementById('edit-memo-input');
       if (memoInput) memoInput.value = recipe.memo || '';
@@ -498,11 +498,12 @@ function init() {
     },
     onEditChipToggle(categoryId) {
       toggleCategoryId(state.editDraftCategoryIds, categoryId);
-      ui.renderEditGroups(state.categories, state.editDraftCategoryIds);
+      ui.renderCatGroups('edit-cat-groups', state.categories, state.editDraftCategoryIds, { includeFree: false, compact: true });
+      ui.renderFreeTagPicker('edit', state.categories, state.editDraftCategoryIds, []);
     },
     onEditRatingSelect(value) {
       state.editDraftRating = state.editDraftRating === value ? null : value; // 同じ星を再タップで評価解除
-      ui.renderEditRating(state.editDraftRating);
+      ui.renderRatingPicker('edit-rating-row', state.editDraftRating);
     },
     onEditSave() {
       handleEditSave();
@@ -517,7 +518,7 @@ function init() {
     onRandomCatSelect(categoryId) {
       toggleCategoryId(state.randomCategoryIds, categoryId);
       state.randomLastId = null;
-      ui.renderRandomCats(state.categories, state.randomCategoryIds);
+      ui.renderCatGroups('random-cat-groups', state.categories, state.randomCategoryIds, { includeFree: false, compact: true });
       ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
     },
     onRandomFreeTagPick(name) {
@@ -530,7 +531,7 @@ function init() {
       }
       state.randomCategoryIds.add(cat.id);
       state.randomLastId = null;
-      ui.renderRandomCats(state.categories, state.randomCategoryIds);
+      ui.renderCatGroups('random-cat-groups', state.categories, state.randomCategoryIds, { includeFree: false, compact: true });
       ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
       if (input) input.value = '';
     },
@@ -543,7 +544,7 @@ function init() {
       state.randomCategoryIds.clear();
       state.randomMinRating = null;
       state.randomLastId = null;
-      ui.renderRandomCats(state.categories, state.randomCategoryIds);
+      ui.renderCatGroups('random-cat-groups', state.categories, state.randomCategoryIds, { includeFree: false, compact: true });
       ui.renderFreeTagPicker('random', state.categories, state.randomCategoryIds);
       ui.renderRatingRow('random-rating-row', state.randomMinRating);
     },
