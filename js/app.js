@@ -3,6 +3,7 @@ import * as api from './api.js';
 import * as ui from './ui.js';
 import { APP_VERSION } from './config.js';
 import { dateKey, todayDate } from './dateutils.js';
+import { kanaRowOf } from './gojuon.js';
 
 const state = {
   categories: [],
@@ -44,9 +45,12 @@ async function loadCategories() {
 }
 
 // メニュー「タグの読みがなを設定」画面の一覧を、最新のstate.categoriesから再描画する。
+// タグ名自体がひらがな/カタカナだけなら、それだけで五十音の行を正しく判定できるため
+// 読みがなの登録は不要([[gojuon.js]]のkanaRowOf参照)。タグ編集画面の一覧には、
+// 読みがなの登録が実際に意味のあるタグ(漢字・英数字などを含むもの)だけを出す。
 function renderKanaList() {
   const freeCats = state.categories
-    .filter((c) => !c.group_key)
+    .filter((c) => !c.group_key && kanaRowOf(c.name) === null)
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
   ui.renderMenuKanaList(freeCats);
 }
