@@ -118,7 +118,7 @@
       <button class="sheet-close" id="random-close" aria-label="閉じる">✕</button>
 
       <div id="random-step-pick">
-        <h2 style="margin:4px 0 4px; font-size:18px;">🎲 おまかせ</h2>
+        <h2 style="margin:4px 0 4px; font-size:18px;"><svg class="heading-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>おまかせ</h2>
         <p style="margin:0 0 18px; color:var(--text-2); font-size:13px;">カテゴリを選んで決めよう</p>
         <div class="field-list">
           <div class="field-row">
@@ -220,7 +220,7 @@
     <div class="sheet">
       <div class="sheet-handle"></div>
       <button class="sheet-close" id="filter-close" aria-label="閉じる">✕</button>
-      <h2 style="margin:4px 0 16px; font-size:18px;">🔍 検索</h2>
+      <h2 style="margin:4px 0 16px; font-size:18px;"><svg class="heading-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>検索</h2>
       <div class="field-list">
         <div class="field-row">
           <p class="field-row-label">評価</p>
@@ -260,9 +260,9 @@
       <div id="menu-step-main">
         <h2 style="margin:4px 0 16px; font-size:18px;">メニュー</h2>
         <div class="btn-row" style="flex-direction:column; gap:10px;">
-          <button id="menu-stats-btn" class="btn btn-secondary" type="button">📈 統計を見る</button>
+          <button id="menu-kana-btn" class="btn btn-secondary" type="button">🔤 タグ編集</button>
+          <button id="menu-stats-btn" class="btn btn-secondary" type="button">🏆 ランキング</button>
           <button id="menu-usage-btn" class="btn btn-secondary" type="button">📊 DB使用容量を確認</button>
-          <button id="menu-kana-btn" class="btn btn-secondary" type="button">🔤 タグの読みがなを設定</button>
           <button id="menu-logout-btn" class="btn btn-danger" type="button">ログアウト</button>
         </div>
         <p id="menu-version" class="menu-version"></p>
@@ -276,13 +276,13 @@
 
       <div id="menu-step-stats" class="hidden">
         <button id="menu-stats-back" class="btn-text" type="button" style="padding:4px 0 14px;">◀ 戻る</button>
-        <h2 style="margin:0 0 16px; font-size:18px;">統計</h2>
+        <h2 style="margin:0 0 16px; font-size:18px;">ランキング</h2>
         <div id="menu-stats-content"></div>
       </div>
 
       <div id="menu-step-kana" class="hidden">
         <button id="menu-kana-back" class="btn-text" type="button" style="padding:4px 0 14px;">◀ 戻る</button>
-        <h2 style="margin:0 0 16px; font-size:18px;">タグの読みがなを設定</h2>
+        <h2 style="margin:0 0 16px; font-size:18px;">タグ編集</h2>
         <div id="menu-kana-content"></div>
       </div>
     </div>

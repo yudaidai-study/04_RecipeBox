@@ -59,7 +59,7 @@ function ratingRowHtml(minRating) {
 
 // 一覧の並び順(フィルタ画面専用)。値はapi.listRecipesのsortOrderにそのまま渡す。
 const SORT_OPTIONS = [
-  { value: 'created', label: '最近追加した順' },
+  { value: 'created', label: '追加日順' },
   { value: 'rating', label: '評価順' },
   { value: 'title', label: '名称順' },
 ];
@@ -471,7 +471,6 @@ export function renderMenuKanaList(freeCategories) {
     ? `<div class="kana-list">${rowsHtml}</div>`
     : '<p class="cal-empty-note">自由入力タグがまだありません。</p>';
   el.innerHTML = `
-    <p class="kana-hint">タグの読みがなをひらがなで登録すると、検索・ランダム・追加画面の五十音インデックスで正しい行に表示されます。未登録の漢字タグはすべて「他」に入ります。</p>
     <div class="kana-new-row">
       <input type="text" id="kana-new-name" placeholder="新しいタグ名" maxlength="30" autocomplete="off">
       <input type="text" id="kana-new-kana" placeholder="よみがな(任意)" maxlength="30" autocomplete="off">
@@ -511,7 +510,8 @@ export function showMenuStatsError(message) {
   if (el) el.innerHTML = `<p class="cal-empty-note">${escHtml(message)}</p>`;
 }
 
-// api.getStats()の結果(品目総数・献立登録回数ランキング)を表示する。
+// api.getStats()の結果(献立登録数の多い順ランキング・品目総数)を表示する。
+// 主役はランキングなので、品目総数はDB使用容量画面のような強調ボックスにせず控えめな注記にとどめる。
 export function renderMenuStats(stats) {
   const el = document.getElementById('menu-stats-content');
   if (!el) return;
@@ -526,12 +526,9 @@ export function renderMenuStats(stats) {
     : '<p class="cal-empty-note">まだ献立に登録された記録がありません</p>';
 
   el.innerHTML = `
-    <div class="usage-total">
-      <span class="usage-total-label">保存レシピ 品目総数</span>
-      <span class="usage-total-value">${stats.recipeCount}品</span>
-    </div>
-    <p class="tag-group-label" style="margin-top:18px;">人気のレシピランキング(献立登録回数順)</p>
+    <p class="tag-group-label">人気のレシピランキング(献立登録数)</p>
     <div class="stats-rank-list">${rankingHtml}</div>
+    <p class="stats-total-note">保存レシピ 全${stats.recipeCount}品</p>
   `;
 }
 
