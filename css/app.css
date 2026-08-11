@@ -1209,7 +1209,12 @@ main {
 .kana-section { margin-bottom: 22px; }
 .kana-section:last-child { margin-bottom: 0; }
 .kana-section-title { margin: 0 0 10px; font-size: 16px; font-weight: 700; color: var(--text-1); }
-.kana-hint { margin: 0 0 14px; color: var(--text-2); font-size: 12.5px; line-height: 1.5; }
+.kana-hint { margin: 8px 0 0; color: var(--text-2); font-size: 12.5px; line-height: 1.5; }
+.kana-hint-details { margin-bottom: 10px; }
+.kana-hint-details summary { font-size: 12.5px; font-weight: 700; color: var(--accent-2); cursor: pointer; list-style: none; }
+.kana-hint-details summary::-webkit-details-marker { display: none; }
+.kana-hint-details summary::before { content: '▸ '; }
+.kana-hint-details[open] summary::before { content: '▾ '; }
 .kana-list { display: flex; flex-direction: column; }
 .kana-row {
   display: flex;

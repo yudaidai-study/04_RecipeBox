@@ -481,6 +481,10 @@ export function renderMenuKanaList(freeCategories) {
     </div>
     <div class="kana-section">
       <h2 class="kana-section-title">読みがな更新・削除</h2>
+      <details class="kana-hint-details">
+        <summary>読みがなって?</summary>
+        <p class="kana-hint">読みがなをひらがなで登録しておくと、検索・ランダム・追加画面の五十音インデックスからそのタグを探しやすくなります(未登録の漢字タグは五十音では探せず「他」に入ります)。</p>
+      </details>
       ${listHtml}
     </div>
   `;
