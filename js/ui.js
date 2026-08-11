@@ -1,3 +1,5 @@
+import { GOJUON_ROWS, categoryRow } from './gojuon.js';
+
 export function escHtml(str) {
   if (str == null) return '';
   return String(str).replace(/[&<>"']/g, (c) => ({
@@ -149,6 +151,24 @@ export function initUI(h) {
   document.getElementById('menu-stats-back')?.addEventListener('click', () => handlers.onMenuStatsBack?.());
   document.getElementById('menu-usage-btn')?.addEventListener('click', () => handlers.onMenuUsageOpen?.());
   document.getElementById('menu-usage-back')?.addEventListener('click', () => handlers.onMenuUsageBack?.());
+  document.getElementById('menu-kana-btn')?.addEventListener('click', () => handlers.onMenuKanaOpen?.());
+  document.getElementById('menu-kana-back')?.addEventListener('click', () => handlers.onMenuKanaBack?.());
+  document.getElementById('menu-kana-content')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.kana-row-save');
+    if (!btn) return;
+    const row = btn.closest('.kana-row');
+    const input = row?.querySelector('.kana-row-input');
+    if (row && input) handlers.onKanaSave?.(row.dataset.id, input.value);
+  });
+  // Enterキーでも保存できるように(⑭)。
+  document.getElementById('menu-kana-content')?.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const input = e.target.closest('.kana-row-input');
+    if (!input) return;
+    e.preventDefault();
+    const row = input.closest('.kana-row');
+    if (row) handlers.onKanaSave?.(row.dataset.id, input.value);
+  });
   document.getElementById('menu-logout-btn')?.addEventListener('click', () => handlers.onLogout?.());
   // 今日の献立(④): レシピに紐付く項目だけクリックで元のページへ直接飛べる。
   document.getElementById('today-plan-list')?.addEventListener('click', (e) => {
@@ -344,6 +364,7 @@ export function showMenuStep(step) {
   document.getElementById('menu-step-main').classList.toggle('hidden', step !== 'main');
   document.getElementById('menu-step-usage').classList.toggle('hidden', step !== 'usage');
   document.getElementById('menu-step-stats').classList.toggle('hidden', step !== 'stats');
+  document.getElementById('menu-step-kana').classList.toggle('hidden', step !== 'kana');
 }
 
 // ヘッダーの「全n品」表示・メニューのバージョン表示。
@@ -397,6 +418,48 @@ export function renderUsageSummary(data) {
     <div class="usage-list">${bucketsHtml}</div>
     <p class="archive-note" style="margin-top:14px; border-radius:var(--radius-sm);">Supabase無料プランの目安: データベース500MB・Storage 1GB</p>
   `;
+}
+
+export function showMenuKanaLoading() {
+  const el = document.getElementById('menu-kana-content');
+  if (el) el.innerHTML = '<div class="loading-state"><span class="spin-emoji">🍳</span></div>';
+}
+
+export function showMenuKanaError(message) {
+  const el = document.getElementById('menu-kana-content');
+  if (el) el.innerHTML = `<p class="cal-empty-note">${escHtml(message)}</p>`;
+}
+
+// 自由入力タグ(group_key=null)一覧に読みがな入力欄を添えて表示する(⑭)。
+// 五十音インデックスは漢字タグの読みを自動判定できないため、ここで手動登録できるようにする。
+export function renderMenuKanaList(freeCategories) {
+  const el = document.getElementById('menu-kana-content');
+  if (!el) return;
+  if (freeCategories.length === 0) {
+    el.innerHTML = '<p class="cal-empty-note">自由入力タグがまだありません。</p>';
+    return;
+  }
+  const rowsHtml = freeCategories.map((c) => `
+    <div class="kana-row" data-id="${escHtml(c.id)}">
+      <span class="kana-row-name">${escHtml(c.name)}</span>
+      <input type="text" class="kana-row-input" value="${escHtml(c.kana || '')}" placeholder="よみがな" maxlength="30" autocomplete="off">
+      <button type="button" class="kana-row-save btn-text">保存</button>
+    </div>`).join('');
+  el.innerHTML = `
+    <p class="kana-hint">タグの読みがなをひらがなで登録すると、検索・ランダム・追加画面の五十音インデックスで正しい行に表示されます。未登録の漢字タグはすべて「他」に入ります。</p>
+    <div class="kana-list">${rowsHtml}</div>
+  `;
+}
+
+// 保存成功のフィードバック(該当行のボタンを一瞬✓表示に切り替える)。
+export function setKanaRowSaved(categoryId) {
+  const row = document.querySelector(`.kana-row[data-id="${CSS.escape(categoryId)}"]`);
+  const btn = row?.querySelector('.kana-row-save');
+  if (!btn) return;
+  const original = btn.textContent;
+  btn.textContent = '✓';
+  btn.disabled = true;
+  setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1000);
 }
 
 export function showMenuStatsLoading() {
@@ -462,6 +525,7 @@ export function renderCatGroups(containerId, categories, activeIds, opts) {
 // チップ表示するためのオプション配列。
 export function renderFreeTagPicker(prefix, categories, activeIds, keywords) {
   const freeCats = categories.filter((c) => !c.group_key);
+  setFreeTagCategories(prefix, freeCats);
   const activeChips = freeCats.filter((c) => activeIds.has(c.id));
   const row = document.getElementById(`${prefix}-free-tag-row`);
   if (row) {
@@ -477,6 +541,34 @@ export function renderFreeTagPicker(prefix, categories, activeIds, keywords) {
   if (suggestions) {
     suggestions.innerHTML = freeCats.map((c) => `<option value="${escHtml(c.name)}"></option>`).join('');
   }
+  renderGojuonRow(prefix);
+}
+
+// 五十音インデックス(⑭): タグ検索欄の候補を五十音の行で絞り込むための状態と描画。
+// 漢字タグは読みがなを手動設定しない限り判定できないため、判定不能なタグは「他」行にまとめる([[gojuon.js]])。
+const freeTagCombo = new Map(); // prefix -> { categories: [], activeRow: null }
+
+function getFreeTagCombo(prefix) {
+  if (!freeTagCombo.has(prefix)) freeTagCombo.set(prefix, { categories: [], activeRow: null });
+  return freeTagCombo.get(prefix);
+}
+
+// renderFreeTagPicker以外の場所(例: add.html)からタグ検索コンボを使う場合に、候補配列だけを渡して使う。
+export function setFreeTagCategories(prefix, categories) {
+  getFreeTagCombo(prefix).categories = categories;
+}
+
+function gojuonRowHtml(activeRow) {
+  const rowBtns = GOJUON_ROWS
+    .map((r) => `<button type="button" class="gojuon-btn ${activeRow === r.key ? 'active' : ''}" data-row="${r.key}">${r.label}</button>`)
+    .join('');
+  return rowBtns + `<button type="button" class="gojuon-btn ${activeRow === 'other' ? 'active' : ''}" data-row="other">他</button>`;
+}
+
+export function renderGojuonRow(prefix) {
+  const el = document.getElementById(`${prefix}-gojuon-row`);
+  if (!el) return;
+  el.innerHTML = gojuonRowHtml(getFreeTagCombo(prefix).activeRow);
 }
 
 // 自由入力欄のドロップダウン(datalistはiOS Safari等で見た目のプルダウンが出ないことがあるため、
@@ -487,15 +579,30 @@ const freeTagDropdownWired = new Set();
 export function setupFreeTagDropdown(prefix, onPick) {
   if (freeTagDropdownWired.has(prefix)) return; // 二重初期化ガード(day-filterは検索/ランダムどちらでも同じ欄を使う)
   const input = document.getElementById(`${prefix}-free-tag-input`);
-  const suggestions = document.getElementById(`${prefix}-free-tag-suggestions`);
   const dropdown = document.getElementById(`${prefix}-free-tag-dropdown`);
-  if (!input || !suggestions || !dropdown) return;
+  const gojuonRow = document.getElementById(`${prefix}-gojuon-row`);
+  if (!input || !dropdown) return;
   freeTagDropdownWired.add(prefix);
 
+  // blurで閉じる処理はsetTimeoutで遅延させている(combo-option/gojuon-btnのクリックをmousedownで
+  // 先取りするための対策)ため、行ボタン選択時のinput.focus()で再度開いた直後に、その遅延タイマーが
+  // 後から発火してドロップダウンを閉じてしまうことがある。再描画のたびにタイマーを取り消して防ぐ。
+  let hideTimer = null;
+  function cancelHide() {
+    if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+  }
+
   function renderOptions() {
+    cancelHide();
+    const combo = getFreeTagCombo(prefix);
     const q = input.value.trim().toLowerCase();
-    const names = [...suggestions.options]
-      .map((o) => o.value)
+    const names = combo.categories
+      .filter((c) => {
+        if (!combo.activeRow) return true;
+        const row = categoryRow(c);
+        return combo.activeRow === 'other' ? row === null : row === combo.activeRow;
+      })
+      .map((c) => c.name)
       .filter((n) => !q || n.toLowerCase().includes(q))
       .slice(0, 8);
     if (names.length === 0) {
@@ -514,13 +621,30 @@ export function setupFreeTagDropdown(prefix, onPick) {
     const opt = e.target.closest('.combo-option');
     if (!opt) return;
     e.preventDefault();
+    cancelHide();
     const value = opt.textContent;
     input.value = value;
     dropdown.classList.add('hidden');
     onPick(value);
   });
   input.addEventListener('blur', () => {
-    setTimeout(() => dropdown.classList.add('hidden'), 120);
+    hideTimer = setTimeout(() => { dropdown.classList.add('hidden'); hideTimer = null; }, 120);
+  });
+
+  // 五十音インデックス(⑭): 行ボタンをタップすると、その行の読みを持つタグだけに候補を絞り込む。
+  // もう一度同じ行を押すと解除。行フィルタと自由入力のテキストフィルタは併用できる。
+  // クリック確定はmousedownで行う(clickだと先にinputのblurが発火し、遅延実行される非表示処理に
+  // 巻き込まれてドロップダウンが開いた直後に閉じてしまうため。上のcombo-optionと同じ対策)。
+  gojuonRow?.addEventListener('mousedown', (e) => {
+    const btn = e.target.closest('.gojuon-btn');
+    if (!btn) return;
+    e.preventDefault();
+    cancelHide();
+    const combo = getFreeTagCombo(prefix);
+    combo.activeRow = combo.activeRow === btn.dataset.row ? null : btn.dataset.row;
+    renderGojuonRow(prefix);
+    input.focus();
+    renderOptions();
   });
 }
 

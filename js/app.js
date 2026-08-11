@@ -364,6 +364,34 @@ function init() {
     onMenuUsageBack() {
       ui.showMenuStep('main');
     },
+    async onMenuKanaOpen() {
+      ui.showMenuStep('kana');
+      ui.showMenuKanaLoading();
+      try {
+        if (state.categories.length === 0) await loadCategories();
+        const freeCats = state.categories
+          .filter((c) => !c.group_key)
+          .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+        ui.renderMenuKanaList(freeCats);
+      } catch (err) {
+        console.error(err);
+        ui.showMenuKanaError('タグの読み込みに失敗しました');
+      }
+    },
+    onMenuKanaBack() {
+      ui.showMenuStep('main');
+    },
+    async onKanaSave(categoryId, kana) {
+      try {
+        await api.updateCategoryKana(categoryId, kana);
+        const cat = state.categoriesById.get(categoryId);
+        if (cat) cat.kana = kana.trim() || null;
+        ui.setKanaRowSaved(categoryId);
+      } catch (err) {
+        console.error(err);
+        alert('読みがなの保存に失敗しました');
+      }
+    },
     async onMenuStatsOpen() {
       ui.showMenuStep('stats');
       ui.showMenuStatsLoading();

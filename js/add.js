@@ -1,5 +1,6 @@
 import { initAuth } from './auth.js';
 import * as api from './api.js';
+import * as ui from './ui.js';
 
 const form = document.getElementById('add-form');
 const urlInput = document.getElementById('url-input');
@@ -15,10 +16,10 @@ const saveDoneNote = document.getElementById('save-done-note');
 
 const tagPicker = document.getElementById('tag-picker');
 const freeTagRow = document.getElementById('free-tag-row');
-const freeTagSuggestions = document.getElementById('free-tag-suggestions');
+const freeTagSuggestions = document.getElementById('add-free-tag-suggestions');
 
 const newCatRow = document.getElementById('new-cat-row');
-const newCatInput = document.getElementById('new-cat-input');
+const newCatInput = document.getElementById('add-free-tag-input');
 const newCatAdd = document.getElementById('new-cat-add');
 
 const saveAgainBtn = document.getElementById('save-again-btn');
@@ -96,6 +97,8 @@ async function loadCategoriesIntoPicker() {
       }
     }
     renderFreeTagSuggestions();
+    ui.setFreeTagCategories('add', allFreeCategories);
+    ui.renderGojuonRow('add');
   } catch (err) {
     console.error(err);
     showError('カテゴリの読み込みに失敗しました');
@@ -239,6 +242,12 @@ saveAgainBtn.addEventListener('click', () => {
   saveDone.classList.add('hidden');
   form.classList.remove('hidden');
   urlInput.focus();
+});
+
+// 五十音インデックス(⑭)込みのタグ候補ドロップダウンは、検索・ランダム画面と同じ共通コンポーネントを使う。
+ui.setupFreeTagDropdown('add', (name) => {
+  newCatInput.value = name;
+  newCatAdd.click();
 });
 
 function init() {

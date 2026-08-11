@@ -882,6 +882,32 @@ main {
   background: var(--surface-1);
 }
 
+/* 五十音インデックス(⑭): タグ検索欄の上に五十音の行ボタンを並べ、タップでその行の読みを持つ候補だけに絞り込む。
+   読みがな未設定の漢字タグは判定できないため「他」行にまとめる。 */
+.gojuon-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 8px 0 6px;
+}
+.gojuon-btn {
+  flex-shrink: 0;
+  min-width: 30px;
+  padding: 5px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--sep);
+  background: var(--surface-1);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.gojuon-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 /* 自由入力欄のドロップダウン(datalistの代わりに自前で描画。iOS Safari等でも確実に表示されるようにするため) */
 .free-tag-combo { position: relative; }
 .combo-dropdown {
@@ -1178,6 +1204,21 @@ main {
 .usage-name { font-weight: 700; }
 .usage-sub { color: var(--text-3); font-size: 12px; }
 .usage-bytes { margin-left: auto; color: var(--text-2); font-weight: 700; white-space: nowrap; }
+
+/* タグの読みがな設定(⑭) */
+.kana-hint { margin: 0 0 14px; color: var(--text-2); font-size: 12.5px; line-height: 1.5; }
+.kana-list { display: flex; flex-direction: column; }
+.kana-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px;
+  border-bottom: 1px solid var(--sep);
+}
+.kana-row:last-child { border-bottom: none; }
+.kana-row-name { flex-shrink: 0; width: 92px; font-weight: 700; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kana-row-input { flex: 1; min-width: 0; min-height: 38px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--sep); background: var(--surface-2); font-size: 16px; color: var(--text-1); }
+.kana-row-save { flex-shrink: 0; min-height: 38px; padding: 0 12px; }
 
 /* メニュー最下部のバージョン表記(③) */
 .menu-version {

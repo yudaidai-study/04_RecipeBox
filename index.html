@@ -118,7 +118,7 @@
       <button class="sheet-close" id="random-close" aria-label="閉じる">✕</button>
 
       <div id="random-step-pick">
-        <h2 style="margin:4px 0 4px; font-size:18px;">今日は何作る?</h2>
+        <h2 style="margin:4px 0 4px; font-size:18px;">🎲 おまかせ</h2>
         <p style="margin:0 0 18px; color:var(--text-2); font-size:13px;">カテゴリを選んで決めよう</p>
         <div class="field-list">
           <div class="field-row">
@@ -130,6 +130,7 @@
             <p class="field-row-label">タグ検索</p>
             <div class="field-row-value">
               <div class="tag-row" id="random-free-tag-row"></div>
+              <div class="gojuon-row" id="random-gojuon-row"></div>
               <div class="free-tag-combo">
                 <input type="text" id="random-free-tag-input" class="free-tag-picker-input" list="random-free-tag-suggestions" placeholder="タグ名を入力または選択" autocomplete="off">
                 <datalist id="random-free-tag-suggestions"></datalist>
@@ -219,7 +220,7 @@
     <div class="sheet">
       <div class="sheet-handle"></div>
       <button class="sheet-close" id="filter-close" aria-label="閉じる">✕</button>
-      <h2 style="margin:4px 0 16px; font-size:18px;">検索</h2>
+      <h2 style="margin:4px 0 16px; font-size:18px;">🔍 検索</h2>
       <div class="field-list">
         <div class="field-row">
           <p class="field-row-label">評価</p>
@@ -230,8 +231,9 @@
           <p class="field-row-label">タグ検索</p>
           <div class="field-row-value">
             <div class="tag-row" id="filter-free-tag-row"></div>
+            <div class="gojuon-row" id="filter-gojuon-row"></div>
             <div class="free-tag-combo">
-              <input type="text" id="filter-free-tag-input" class="free-tag-picker-input" list="filter-free-tag-suggestions" placeholder="タグ名または料理名の一部を入力" autocomplete="off">
+              <input type="text" id="filter-free-tag-input" class="free-tag-picker-input" list="filter-free-tag-suggestions" placeholder="レシピ名の一部またはタグ名を入力" autocomplete="off">
               <datalist id="filter-free-tag-suggestions"></datalist>
               <div id="filter-free-tag-dropdown" class="combo-dropdown hidden"></div>
             </div>
@@ -260,6 +262,7 @@
         <div class="btn-row" style="flex-direction:column; gap:10px;">
           <button id="menu-stats-btn" class="btn btn-secondary" type="button">📈 統計を見る</button>
           <button id="menu-usage-btn" class="btn btn-secondary" type="button">📊 DB使用容量を確認</button>
+          <button id="menu-kana-btn" class="btn btn-secondary" type="button">🔤 タグの読みがなを設定</button>
           <button id="menu-logout-btn" class="btn btn-danger" type="button">ログアウト</button>
         </div>
         <p id="menu-version" class="menu-version"></p>
@@ -275,6 +278,12 @@
         <button id="menu-stats-back" class="btn-text" type="button" style="padding:4px 0 14px;">◀ 戻る</button>
         <h2 style="margin:0 0 16px; font-size:18px;">統計</h2>
         <div id="menu-stats-content"></div>
+      </div>
+
+      <div id="menu-step-kana" class="hidden">
+        <button id="menu-kana-back" class="btn-text" type="button" style="padding:4px 0 14px;">◀ 戻る</button>
+        <h2 style="margin:0 0 16px; font-size:18px;">タグの読みがなを設定</h2>
+        <div id="menu-kana-content"></div>
       </div>
     </div>
   </div>

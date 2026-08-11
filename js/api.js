@@ -58,9 +58,20 @@ export async function listCategories() {
   assertReady();
   const { data, error } = await supabase
     .from('categories')
-    .select('id, name, group_key, sort_order');
+    .select('id, name, group_key, sort_order, kana');
   if (error) throw error;
   return sortCategories(data);
+}
+
+// タグの読みがな(五十音インデックス用)を設定・更新する。空文字を渡した場合はnullにして未設定へ戻す。
+export async function updateCategoryKana(categoryId, kana) {
+  assertReady();
+  const trimmed = (kana || '').trim();
+  const { error } = await supabase
+    .from('categories')
+    .update({ kana: trimmed || null })
+    .eq('id', categoryId);
+  if (error) throw error;
 }
 
 export async function createCategory(name) {
