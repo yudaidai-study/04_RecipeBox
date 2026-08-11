@@ -43,6 +43,14 @@ async function loadCategories() {
   state.categoriesById = new Map(state.categories.map((c) => [c.id, c]));
 }
 
+// メニュー「タグの読みがなを設定」画面の一覧を、最新のstate.categoriesから再描画する。
+function renderKanaList() {
+  const freeCats = state.categories
+    .filter((c) => !c.group_key)
+    .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  ui.renderMenuKanaList(freeCats);
+}
+
 async function loadRecipes() {
   ui.showState('loading');
   try {
@@ -369,10 +377,7 @@ function init() {
       ui.showMenuKanaLoading();
       try {
         if (state.categories.length === 0) await loadCategories();
-        const freeCats = state.categories
-          .filter((c) => !c.group_key)
-          .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
-        ui.renderMenuKanaList(freeCats);
+        renderKanaList();
       } catch (err) {
         console.error(err);
         ui.showMenuKanaError('タグの読み込みに失敗しました');
@@ -390,6 +395,34 @@ function init() {
       } catch (err) {
         console.error(err);
         alert('読みがなの保存に失敗しました');
+      }
+    },
+    async onKanaCreate(name, kana) {
+      const trimmed = (name || '').trim();
+      if (!trimmed) return;
+      try {
+        await api.createCategory(trimmed, kana);
+        await loadCategories();
+        renderKanaList();
+        ui.clearKanaNewRow();
+      } catch (err) {
+        console.error(err);
+        alert('タグの追加に失敗しました');
+      }
+    },
+    async onKanaDelete(categoryId, name) {
+      if (!confirm(`タグ「${name}」を削除しますか?\nこのタグが付いているレシピからも外れます(レシピ自体は削除されません)。`)) return;
+      try {
+        await api.deleteCategory(categoryId);
+        // 削除したタグが検索条件・編集下書きなどに残っていると不整合になるため、全ての選択集合から外す。
+        for (const ids of [state.activeCategoryIds, state.filterDraftCategoryIds, state.randomCategoryIds, state.editDraftCategoryIds]) {
+          ids.delete(categoryId);
+        }
+        await loadCategories();
+        renderKanaList();
+      } catch (err) {
+        console.error(err);
+        alert('タグの削除に失敗しました');
       }
     },
     async onMenuStatsOpen() {

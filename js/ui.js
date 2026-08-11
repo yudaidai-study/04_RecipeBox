@@ -154,20 +154,44 @@ export function initUI(h) {
   document.getElementById('menu-kana-btn')?.addEventListener('click', () => handlers.onMenuKanaOpen?.());
   document.getElementById('menu-kana-back')?.addEventListener('click', () => handlers.onMenuKanaBack?.());
   document.getElementById('menu-kana-content')?.addEventListener('click', (e) => {
-    const btn = e.target.closest('.kana-row-save');
-    if (!btn) return;
-    const row = btn.closest('.kana-row');
-    const input = row?.querySelector('.kana-row-input');
-    if (row && input) handlers.onKanaSave?.(row.dataset.id, input.value);
+    const saveBtn = e.target.closest('.kana-row-save');
+    if (saveBtn) {
+      const row = saveBtn.closest('.kana-row');
+      const input = row?.querySelector('.kana-row-input');
+      if (row && input) handlers.onKanaSave?.(row.dataset.id, input.value);
+      return;
+    }
+    const delBtn = e.target.closest('.kana-row-delete');
+    if (delBtn) {
+      const row = delBtn.closest('.kana-row');
+      if (row) handlers.onKanaDelete?.(row.dataset.id, row.dataset.name);
+      return;
+    }
+    const addBtn = e.target.closest('#kana-new-add');
+    if (addBtn) {
+      const nameInput = document.getElementById('kana-new-name');
+      const kanaInput = document.getElementById('kana-new-kana');
+      if (nameInput) handlers.onKanaCreate?.(nameInput.value, kanaInput?.value || '');
+      return;
+    }
   });
-  // Enterキーでも保存できるように(⑭)。
+  // Enterキーでも保存/新規追加できるように(⑭)。
   document.getElementById('menu-kana-content')?.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
-    const input = e.target.closest('.kana-row-input');
-    if (!input) return;
-    e.preventDefault();
-    const row = input.closest('.kana-row');
-    if (row) handlers.onKanaSave?.(row.dataset.id, input.value);
+    const rowInput = e.target.closest('.kana-row-input');
+    if (rowInput) {
+      e.preventDefault();
+      const row = rowInput.closest('.kana-row');
+      if (row) handlers.onKanaSave?.(row.dataset.id, rowInput.value);
+      return;
+    }
+    const newInput = e.target.closest('#kana-new-name, #kana-new-kana');
+    if (newInput) {
+      e.preventDefault();
+      const nameInput = document.getElementById('kana-new-name');
+      const kanaInput = document.getElementById('kana-new-kana');
+      handlers.onKanaCreate?.(nameInput.value, kanaInput?.value || '');
+    }
   });
   document.getElementById('menu-logout-btn')?.addEventListener('click', () => handlers.onLogout?.());
   // 今日の献立(④): レシピに紐付く項目だけクリックで元のページへ直接飛べる。
@@ -432,23 +456,38 @@ export function showMenuKanaError(message) {
 
 // 自由入力タグ(group_key=null)一覧に読みがな入力欄を添えて表示する(⑭)。
 // 五十音インデックスは漢字タグの読みを自動判定できないため、ここで手動登録できるようにする。
+// 新規タグの登録・既存タグの削除もこの画面から行える(⑮)。
 export function renderMenuKanaList(freeCategories) {
   const el = document.getElementById('menu-kana-content');
   if (!el) return;
-  if (freeCategories.length === 0) {
-    el.innerHTML = '<p class="cal-empty-note">自由入力タグがまだありません。</p>';
-    return;
-  }
   const rowsHtml = freeCategories.map((c) => `
-    <div class="kana-row" data-id="${escHtml(c.id)}">
+    <div class="kana-row" data-id="${escHtml(c.id)}" data-name="${escHtml(c.name)}">
       <span class="kana-row-name">${escHtml(c.name)}</span>
       <input type="text" class="kana-row-input" value="${escHtml(c.kana || '')}" placeholder="よみがな" maxlength="30" autocomplete="off">
       <button type="button" class="kana-row-save btn-text">保存</button>
+      <button type="button" class="kana-row-delete btn-text" aria-label="削除">🗑</button>
     </div>`).join('');
+  const listHtml = freeCategories.length
+    ? `<div class="kana-list">${rowsHtml}</div>`
+    : '<p class="cal-empty-note">自由入力タグがまだありません。</p>';
   el.innerHTML = `
     <p class="kana-hint">タグの読みがなをひらがなで登録すると、検索・ランダム・追加画面の五十音インデックスで正しい行に表示されます。未登録の漢字タグはすべて「他」に入ります。</p>
-    <div class="kana-list">${rowsHtml}</div>
+    <div class="kana-new-row">
+      <input type="text" id="kana-new-name" placeholder="新しいタグ名" maxlength="30" autocomplete="off">
+      <input type="text" id="kana-new-kana" placeholder="よみがな(任意)" maxlength="30" autocomplete="off">
+      <button type="button" id="kana-new-add" class="btn-text">＋ 追加</button>
+    </div>
+    ${listHtml}
   `;
+}
+
+// 新規タグ追加成功後、入力欄をクリアする。
+export function clearKanaNewRow() {
+  const nameInput = document.getElementById('kana-new-name');
+  const kanaInput = document.getElementById('kana-new-kana');
+  if (nameInput) nameInput.value = '';
+  if (kanaInput) kanaInput.value = '';
+  nameInput?.focus();
 }
 
 // 保存成功のフィードバック(該当行のボタンを一瞬✓表示に切り替える)。

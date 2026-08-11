@@ -1219,6 +1219,20 @@ main {
 .kana-row-name { flex-shrink: 0; width: 92px; font-weight: 700; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kana-row-input { flex: 1; min-width: 0; min-height: 38px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--sep); background: var(--surface-2); font-size: 16px; color: var(--text-1); }
 .kana-row-save { flex-shrink: 0; min-height: 38px; padding: 0 12px; }
+.kana-row-delete { flex-shrink: 0; min-height: 38px; min-width: 38px; padding: 0; color: var(--danger, #d64545); font-size: 15px; }
+
+/* 新規タグ追加欄(⑮): 一覧の上に固定表示し、タグ名+読みがな(任意)をまとめて登録できる */
+.kana-new-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--sep);
+}
+.kana-new-row input { flex: 1 1 120px; min-width: 0; min-height: 38px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--sep); background: var(--surface-2); font-size: 16px; color: var(--text-1); }
+#kana-new-add { flex-shrink: 0; min-height: 38px; padding: 0 14px; color: var(--accent-2); font-weight: 700; }
 
 /* メニュー最下部のバージョン表記(③) */
 .menu-version {

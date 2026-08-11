@@ -74,15 +74,17 @@ export async function updateCategoryKana(categoryId, kana) {
   if (error) throw error;
 }
 
-export async function createCategory(name) {
+// kanaは省略可(レシピ追加・編集画面など読みがなを扱わない呼び出し元との互換性のため)。
+export async function createCategory(name, kana) {
   assertReady();
   const trimmed = name.trim();
   if (!trimmed) throw new Error('カテゴリ名を入力してください');
+  const trimmedKana = (kana || '').trim();
 
   const { data, error } = await supabase
     .from('categories')
-    .insert({ name: trimmed }) // group_keyは指定しない = 自由入力タグ扱い
-    .select('id, name, group_key, sort_order')
+    .insert({ name: trimmed, kana: trimmedKana || null }) // group_keyは指定しない = 自由入力タグ扱い
+    .select('id, name, group_key, sort_order, kana')
     .single();
 
   if (error) {
@@ -90,7 +92,7 @@ export async function createCategory(name) {
       // 同名カテゴリが既に存在する場合はそれを返す(重複作成エラーにしない)
       const { data: existing, error: fetchError } = await supabase
         .from('categories')
-        .select('id, name, group_key, sort_order')
+        .select('id, name, group_key, sort_order, kana')
         .eq('name', trimmed)
         .single();
       if (fetchError) throw fetchError;
@@ -99,6 +101,14 @@ export async function createCategory(name) {
     throw error;
   }
   return data;
+}
+
+// 自由入力タグを削除する。紐付くrecipe_categoriesはon delete cascadeで自動的に消える
+// (=そのタグが付いていたレシピからタグが外れるだけで、レシピ自体は残る)。
+export async function deleteCategory(categoryId) {
+  assertReady();
+  const { error } = await supabase.from('categories').delete().eq('id', categoryId);
+  if (error) throw error;
 }
 
 // 並び順(フィルタ画面の「並び順」)。'created'(デフォルト・最近追加した順)はDB取得時のorderで既に
