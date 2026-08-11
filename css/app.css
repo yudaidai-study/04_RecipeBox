@@ -1208,7 +1208,7 @@ main {
 /* タグ編集画面(⑭⑮): 「タグを追加」「タグの読みがな変更・削除」の2セクションに分けて表示する */
 .kana-section { margin-bottom: 22px; }
 .kana-section:last-child { margin-bottom: 0; }
-.kana-section-title { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--text-2); }
+.kana-section-title { margin: 0 0 10px; font-size: 16px; font-weight: 700; color: var(--text-1); }
 .kana-hint { margin: 0 0 14px; color: var(--text-2); font-size: 12.5px; line-height: 1.5; }
 .kana-list { display: flex; flex-direction: column; }
 .kana-row {

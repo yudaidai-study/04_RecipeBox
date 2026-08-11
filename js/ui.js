@@ -472,7 +472,7 @@ export function renderMenuKanaList(freeCategories) {
     : '<p class="cal-empty-note">自由入力タグがまだありません。</p>';
   el.innerHTML = `
     <div class="kana-section">
-      <p class="kana-section-title">タグを追加</p>
+      <h2 class="kana-section-title">タグ追加</h2>
       <div class="kana-new-row">
         <input type="text" id="kana-new-name" placeholder="新しいタグ名" maxlength="30" autocomplete="off">
         <input type="text" id="kana-new-kana" placeholder="よみがな(任意)" maxlength="30" autocomplete="off">
@@ -480,7 +480,7 @@ export function renderMenuKanaList(freeCategories) {
       </div>
     </div>
     <div class="kana-section">
-      <p class="kana-section-title">タグの読みがな変更・削除</p>
+      <h2 class="kana-section-title">読みがな更新・削除</h2>
       <p class="kana-hint">読みがなをひらがなで登録しておくと、検索・ランダム・追加画面の五十音インデックスからそのタグを探しやすくなります(未登録の漢字タグは五十音では探せず「他」に入ります)。</p>
       ${listHtml}
     </div>
