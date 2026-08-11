@@ -644,6 +644,14 @@ export function setupFreeTagDropdown(prefix, onPick) {
     cancelHide();
     const combo = getFreeTagCombo(prefix);
     const q = input.value.trim().toLowerCase();
+    // 空欄かつ五十音の行も選んでいない状態では、全候補が出てくるだけで絞り込みの意味がないため
+    // 何も表示しない(Enterで確定した直後に欄が空になった時も含む)。行を選んでいる間は、
+    // 五十音から探すための一覧として空欄のままでも表示を続ける。
+    if (!q && !combo.activeRow) {
+      dropdown.classList.add('hidden');
+      dropdown.innerHTML = '';
+      return;
+    }
     const names = combo.categories
       .filter((c) => {
         if (!combo.activeRow) return true;

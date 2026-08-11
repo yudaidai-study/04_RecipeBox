@@ -1,4 +1,4 @@
-const CACHE = 'recipebox-v44';
+const CACHE = 'recipebox-v45';
 const SUPABASE_JS_URL = 'https://esm.sh/@supabase/supabase-js@2.111.0';
 
 const ASSETS = [
