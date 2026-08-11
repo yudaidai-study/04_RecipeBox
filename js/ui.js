@@ -471,12 +471,19 @@ export function renderMenuKanaList(freeCategories) {
     ? `<div class="kana-list">${rowsHtml}</div>`
     : '<p class="cal-empty-note">自由入力タグがまだありません。</p>';
   el.innerHTML = `
-    <div class="kana-new-row">
-      <input type="text" id="kana-new-name" placeholder="新しいタグ名" maxlength="30" autocomplete="off">
-      <input type="text" id="kana-new-kana" placeholder="よみがな(任意)" maxlength="30" autocomplete="off">
-      <button type="button" id="kana-new-add" class="btn-text">＋ 追加</button>
+    <div class="kana-section">
+      <p class="kana-section-title">タグを追加</p>
+      <div class="kana-new-row">
+        <input type="text" id="kana-new-name" placeholder="新しいタグ名" maxlength="30" autocomplete="off">
+        <input type="text" id="kana-new-kana" placeholder="よみがな(任意)" maxlength="30" autocomplete="off">
+        <button type="button" id="kana-new-add" class="btn-text">＋ 追加</button>
+      </div>
     </div>
-    ${listHtml}
+    <div class="kana-section">
+      <p class="kana-section-title">タグの読みがな変更・削除</p>
+      <p class="kana-hint">読みがなをひらがなで登録しておくと、検索・ランダム・追加画面の五十音インデックスからそのタグを探しやすくなります(未登録の漢字タグは五十音では探せず「他」に入ります)。</p>
+      ${listHtml}
+    </div>
   `;
 }
 
@@ -526,7 +533,6 @@ export function renderMenuStats(stats) {
     : '<p class="cal-empty-note">まだ献立に登録された記録がありません</p>';
 
   el.innerHTML = `
-    <p class="tag-group-label">人気のレシピランキング(献立登録数)</p>
     <div class="stats-rank-list">${rankingHtml}</div>
     <p class="stats-total-note">保存レシピ 全${stats.recipeCount}品</p>
   `;

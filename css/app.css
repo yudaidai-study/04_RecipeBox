@@ -1205,7 +1205,10 @@ main {
 .usage-sub { color: var(--text-3); font-size: 12px; }
 .usage-bytes { margin-left: auto; color: var(--text-2); font-weight: 700; white-space: nowrap; }
 
-/* タグの読みがな設定(⑭) */
+/* タグ編集画面(⑭⑮): 「タグを追加」「タグの読みがな変更・削除」の2セクションに分けて表示する */
+.kana-section { margin-bottom: 22px; }
+.kana-section:last-child { margin-bottom: 0; }
+.kana-section-title { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--text-2); }
 .kana-hint { margin: 0 0 14px; color: var(--text-2); font-size: 12.5px; line-height: 1.5; }
 .kana-list { display: flex; flex-direction: column; }
 .kana-row {
@@ -1227,9 +1230,6 @@ main {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding-bottom: 14px;
-  margin-bottom: 6px;
-  border-bottom: 1px solid var(--sep);
 }
 .kana-new-row input { flex: 1 1 120px; min-width: 0; min-height: 38px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--sep); background: var(--surface-2); font-size: 16px; color: var(--text-1); }
 #kana-new-add { flex-shrink: 0; min-height: 38px; padding: 0 14px; color: var(--accent-2); font-weight: 700; }
