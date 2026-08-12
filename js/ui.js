@@ -603,8 +603,7 @@ export function renderFieldList(containerId, prefix, opts = {}) {
         <div class="gojuon-row" id="${prefix}-gojuon-row"></div>
         <div class="free-tag-combo">
           <div class="new-cat-row">
-            <input type="text" id="${prefix}-free-tag-input" class="free-tag-picker-input" list="${prefix}-free-tag-suggestions" placeholder="${escHtml(tagPlaceholder)}" autocomplete="off">
-            <datalist id="${prefix}-free-tag-suggestions"></datalist>
+            <input type="text" id="${prefix}-free-tag-input" class="free-tag-picker-input" placeholder="${escHtml(tagPlaceholder)}" autocomplete="off">
             ${showAddButton ? `<button type="button" id="${prefix}-free-tag-add">${escHtml(addButtonLabel)}</button>` : ''}
           </div>
           <div id="${prefix}-free-tag-dropdown" class="combo-dropdown hidden"></div>
@@ -642,8 +641,8 @@ export function renderCatGroups(containerId, categories, activeIds, opts) {
 }
 
 // フィルタ系画面(フィルタ・今日は何作る・カレンダー日別フィルタ)共通の自由入力タグ選択欄(⑪)。
-// テキスト入力+datalist(候補一覧)を一体化した1つのコンボボックスとして扱う(①: 従来のselectは廃止)。
-// 「選択中のタグだけをチップ表示」+「既存タグ名を候補にしたdatalist入力」の組み合わせ。
+// テキスト入力+自前ドロップダウン(候補一覧)を一体化した1つのコンボボックスとして扱う(①: 従来のselectは廃止)。
+// 「選択中のタグだけをチップ表示」+「既存タグ名を候補にした入力」の組み合わせ。
 // prefixは各画面のDOM id接頭辞("filter" / "random" / "day-filter")。
 // keywords(①: フィルタ画面のみ使用)は、既存タグ名と一致しなかった自由入力語を料理名の部分一致検索として
 // チップ表示するためのオプション配列。
@@ -660,10 +659,6 @@ export function renderFreeTagPicker(prefix, categories, activeIds, keywords) {
       .map((k) => `<button type="button" class="cat-chip active keyword-chip" data-keyword="${escHtml(k)}">🔍 ${escHtml(k)}<span class="chip-x" aria-hidden="true">×</span></button>`)
       .join('');
     row.innerHTML = tagChipsHtml + keywordChipsHtml;
-  }
-  const suggestions = document.getElementById(`${prefix}-free-tag-suggestions`);
-  if (suggestions) {
-    suggestions.innerHTML = freeCats.map((c) => `<option value="${escHtml(c.name)}"></option>`).join('');
   }
   renderGojuonRow(prefix);
 }
@@ -695,8 +690,9 @@ export function renderGojuonRow(prefix) {
   el.innerHTML = gojuonRowHtml(getFreeTagCombo(prefix).activeRow);
 }
 
-// 自由入力欄のドロップダウン(datalistはiOS Safari等で見た目のプルダウンが出ないことがあるため、
-// 同じ欄でクリック/入力するとタグ候補が開く自前のドロップダウンを併設する)。
+// 自由入力欄のドロップダウン(datalistはiOS Safari等で見た目のプルダウンが出ない上、空欄でも
+// 候補が全件出てしまい絞り込み表示を制御できないため使わず、同じ欄でクリック/入力すると
+// タグ候補が開く自前のドロップダウンを使う)。
 // prefixは各画面のDOM id接頭辞("filter" / "random" / "day-filter")。onPickはEnter確定時と同じ処理。
 // 画面(index.html/calendar.html)側に `${prefix}-free-tag-dropdown` の空divを用意しておく必要がある。
 const freeTagDropdownWired = new Set();

@@ -96,6 +96,9 @@ img {
 /* ===== ヘッダー ===== */
 
 .app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   background: var(--header-grad);
   padding: calc(env(safe-area-inset-top) + 12px) 20px 14px;
   color: #fff;

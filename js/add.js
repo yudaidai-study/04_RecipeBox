@@ -128,7 +128,7 @@ function toggleCategoryId(id) {
   renderPicker();
 }
 
-// プルダウン(datalist)候補を選んだ後や既存タグ名を入力した後、Enterでそのまま追加できるように。
+// ドロップダウン候補を選んだ後や既存タグ名を入力した後、Enterでそのまま追加できるように。
 newCatInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
